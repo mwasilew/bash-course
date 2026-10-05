@@ -1,0 +1,3819 @@
+<title>Bash for Beginners</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a course binder. Sticky lesson index on the left, one lesson open at a time on the right,
+   commands shown as dark terminal panes, keys drawn as keycaps. */
+:root {
+  --bg: #f2f4f1;
+  --surface: #ffffff;
+  --ink: #18232b;
+  --muted: #56636c;
+  --line: #d8ded9;
+  --accent: #1d6676;
+  --accent-soft: #e1eef0;
+  --key: #9a5a0c;
+  --key-bg: #fbf3e6;
+  --done: #2f7a46;
+  --term-bg: #18212a;
+  --term-bar: #222d37;
+  --term-fg: #e2e8e3;
+  --term-dim: #8fa0a8;
+  --term-prompt: #e7a94f;
+
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Ubuntu Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11171c; --surface: #182027; --ink: #e3e9e5; --muted: #9aa8a2; --line: #2b3640;
+    --accent: #72c2d0; --accent-soft: #1b3138; --key: #eab063; --key-bg: #2a2418; --done: #6cc487;
+    --term-bg: #0b1014; --term-bar: #151c22; --term-fg: #dde5e0; --term-dim: #7d8c94; --term-prompt: #e7a94f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11171c; --surface: #182027; --ink: #e3e9e5; --muted: #9aa8a2; --line: #2b3640;
+  --accent: #72c2d0; --accent-soft: #1b3138; --key: #eab063; --key-bg: #2a2418; --done: #6cc487;
+  --term-bg: #0b1014; --term-bar: #151c22; --term-fg: #dde5e0; --term-dim: #7d8c94; --term-prompt: #e7a94f;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.6;
+}
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible {
+  outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px;
+}
+
+.shell { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 100vh; }
+
+/* ---- sidebar ---- */
+.side {
+  position: sticky; top: env(safe-area-inset-top, 0px);
+  height: 100vh; overflow-y: auto;
+  border-right: 1px solid var(--line);
+  padding: 28px 18px 40px;
+  display: flex; flex-direction: column; gap: 22px;
+}
+.brand { text-decoration: none; color: var(--ink); display: flex; flex-direction: column; gap: 2px; }
+.brand b { font-family: var(--display); font-weight: 800; font-size: 1.35rem; letter-spacing: -0.01em; }
+.brand span { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+.brand span::before { content: "$ "; color: var(--key); }
+.side h2 {
+  font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+  margin: 0 0 6px 10px; font-weight: 700;
+}
+.side ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1px; }
+.side a {
+  display: grid; grid-template-columns: 30px 1fr 18px; align-items: baseline; gap: 6px;
+  padding: 6px 10px; border-radius: 8px; text-decoration: none; color: var(--ink); font-size: 0.95rem; line-height: 1.35;
+}
+.side a:hover { background: var(--accent-soft); }
+.side a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+.side .num { font-family: var(--mono); font-size: 0.78rem; color: var(--muted); }
+.tick::after { content: ""; }
+.tick.on::after { content: "✓"; color: var(--done); font-weight: 700; }
+.progress { margin: 0 10px; font-size: 0.85rem; color: var(--muted); }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--done); transition: width .3s; }
+
+.menu-btn { display: none; }
+
+/* ---- main ---- */
+main { padding-inline: 48px; padding-block: 40px 80px; min-width: 0; }
+.view { max-width: 780px; }
+.eyebrow {
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--key);
+  font-weight: 700; margin: 0 0 6px;
+}
+h1, h2, h3, h4 { font-family: var(--display); line-height: 1.2; text-wrap: balance; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 4.5vw, 2.9rem); font-weight: 800; margin: 0 0 14px; }
+.prose h2 { font-size: 1.6rem; font-weight: 800; margin: 2.4em 0 0.5em; padding-top: 0.6em; border-top: 1px solid var(--line); }
+.prose h3 { font-size: 1.2rem; font-weight: 600; margin: 1.8em 0 0.4em; }
+.prose h4 { font-family: var(--mono); font-size: 0.95rem; font-weight: 600; margin: 1.6em 0 0.4em; }
+.prose p, .prose li { max-width: 68ch; }
+.prose ul, .prose ol { padding-left: 1.4em; }
+.prose li + li { margin-top: 0.3em; }
+.prose blockquote { margin: 1em 0; padding: 0.2em 1em; border-left: 3px solid var(--line); color: var(--muted); }
+
+.prompt {
+  font-family: var(--mono); font-size: 0.9rem; margin: 0;
+  background: var(--term-bg); color: var(--term-fg);
+  padding: 10px 14px; border-radius: 8px; overflow-x: auto; white-space: nowrap;
+}
+.ps1 { color: var(--term-prompt); }
+.prompt::after { content: "▌"; color: var(--term-fg); animation: blink 1.1s steps(1) infinite; margin-left: 2px; }
+@keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .prompt::after { animation: none; } .bar i { transition: none; } }
+
+.hero { padding-bottom: 8px; }
+.lede { font-size: 1.2rem; color: var(--muted); max-width: 60ch; margin: 0 0 22px; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+.btn {
+  display: inline-block; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 700;
+  background: var(--accent); color: var(--surface); border: 2px solid var(--accent);
+}
+.btn.ghost { background: transparent; color: var(--accent); }
+
+/* lesson list on the start page */
+.toc { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+.toc a {
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) minmax(0, auto) 20px; gap: 12px; align-items: baseline;
+  padding: 12px 6px; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--ink);
+}
+.toc a:hover { background: var(--accent-soft); }
+.toc .num { font-family: var(--mono); color: var(--key); font-weight: 600; }
+.toc .t { font-weight: 700; }
+.toc .c { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); text-align: right; }
+
+/* inline code and keycaps */
+code { font-family: var(--mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--accent-soft); color: var(--ink); padding: 0.1em 0.35em; border-radius: 4px; }
+kbd {
+  font-family: var(--mono); font-size: 0.8em; font-weight: 600; white-space: nowrap;
+  color: var(--key); background: var(--key-bg);
+  border: 1px solid var(--key); border-bottom-width: 3px; border-radius: 5px; padding: 0.05em 0.45em;
+}
+
+/* terminal panes */
+.code { margin: 1em 0 1.3em; border-radius: 10px; overflow: hidden; background: var(--term-bg); }
+.code-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--term-bar); color: var(--term-dim);
+  font-family: var(--mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em;
+  padding: 4px 6px 4px 14px;
+}
+.copy {
+  font: inherit; letter-spacing: 0.06em; color: var(--term-fg); background: transparent;
+  border: 1px solid var(--term-dim); border-radius: 5px; padding: 3px 9px; cursor: pointer;
+}
+.copy:hover { border-color: var(--term-fg); }
+.code pre { margin: 0; padding: 14px 16px; overflow-x: auto; }
+.code pre code { color: var(--term-fg); font-size: 0.88rem; line-height: 1.6; white-space: pre; }
+
+/* tables */
+.table { overflow-x: auto; margin: 1em 0 1.4em; }
+table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
+th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+td:first-child { white-space: nowrap; }
+
+li.task { list-style: none; margin-left: -1.4em; }
+li.task input { accent-color: var(--done); margin-right: 6px; }
+
+/* answers */
+.answers { margin-top: 3em; border: 1px dashed var(--key); border-radius: 10px; background: var(--surface); }
+.answers summary {
+  cursor: pointer; padding: 14px 18px; font-weight: 700; color: var(--key); list-style: none;
+}
+.answers summary::-webkit-details-marker { display: none; }
+.answers summary::before { content: "▸ "; }
+.answers[open] summary::before { content: "▾ "; }
+.answers summary::after { content: " · try the exercises first!"; font-weight: 400; color: var(--muted); }
+.answers > .prose { padding: 0 18px 18px; }
+.answers .prose > :first-child { margin-top: 0; }
+
+.lesson-foot {
+  margin-top: 2.5em; padding-top: 1.4em; border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center;
+}
+.done { display: flex; gap: 10px; align-items: center; font-weight: 700; cursor: pointer; }
+.done input { width: 20px; height: 20px; accent-color: var(--done); }
+.pager { display: flex; gap: 10px; flex-wrap: wrap; }
+.pager a {
+  text-decoration: none; padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--ink); font-size: 0.95rem;
+}
+.pager a:hover { border-color: var(--accent); color: var(--accent); }
+.pager a.next { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+
+/* ---- phone ---- */
+@media (max-width: 860px) {
+  body { font-size: 16px; }
+  .shell { display: block; }
+  .side {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; height: auto; max-height: 100vh;
+    background: var(--bg); border-right: 0; border-bottom: 1px solid var(--line);
+    padding: 12px 16px; gap: 14px;
+  }
+  .side-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .menu-btn {
+    display: inline-block; font: inherit; font-weight: 700; color: var(--accent); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  }
+  .side .collapsible { display: none; flex-direction: column; gap: 18px; padding-bottom: 8px; }
+  .side.open .collapsible { display: flex; }
+  .side.open { overflow-y: auto; }
+  main { padding-inline: 16px; padding-block: 24px 60px; }
+  .toc a { grid-template-columns: 32px minmax(0, 1fr) 18px; }
+  .toc .c { display: none; }
+  td:first-child { white-space: normal; }
+}
+</style>
+
+<div class="shell">
+  <aside class="side" id="side">
+    <div class="side-top">
+      <a class="brand" href="#home"><b>Bash for Beginners</b><span>a course for Ubuntu</span></a>
+      <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="side-links">Lessons</button>
+    </div>
+    <div class="collapsible" id="side-links" style="display:flex">
+      <div>
+        <h2>Start</h2>
+        <ul>
+          <li><a href="#home" data-id="home"><span class="num">~</span><span class="t">Start here</span><span></span></a></li>
+          <li><a href="#setup" data-id="setup"><span class="num">./</span><span class="t">Set up the practice folder</span><span></span></a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Lessons</h2>
+        <ul><li><a href="#lesson-1" data-id="lesson-1"><span class="num">01</span><span class="t">Meet the terminal</span><span class="tick" data-id="lesson-1" aria-hidden="true"></span></a></li><li><a href="#lesson-2" data-id="lesson-2"><span class="num">02</span><span class="t">Finding your way around</span><span class="tick" data-id="lesson-2" aria-hidden="true"></span></a></li><li><a href="#lesson-3" data-id="lesson-3"><span class="num">03</span><span class="t">Making and changing files</span><span class="tick" data-id="lesson-3" aria-hidden="true"></span></a></li><li><a href="#lesson-4" data-id="lesson-4"><span class="num">04</span><span class="t">Reading and writing text</span><span class="tick" data-id="lesson-4" aria-hidden="true"></span></a></li><li><a href="#lesson-5" data-id="lesson-5"><span class="num">05</span><span class="t">Getting help</span><span class="tick" data-id="lesson-5" aria-hidden="true"></span></a></li><li><a href="#lesson-6" data-id="lesson-6"><span class="num">06</span><span class="t">Searching</span><span class="tick" data-id="lesson-6" aria-hidden="true"></span></a></li><li><a href="#lesson-7" data-id="lesson-7"><span class="num">07</span><span class="t">Pipes and redirection</span><span class="tick" data-id="lesson-7" aria-hidden="true"></span></a></li><li><a href="#lesson-8" data-id="lesson-8"><span class="num">08</span><span class="t">Permissions and installing programs</span><span class="tick" data-id="lesson-8" aria-hidden="true"></span></a></li><li><a href="#lesson-9" data-id="lesson-9"><span class="num">09</span><span class="t">Your first scripts</span><span class="tick" data-id="lesson-9" aria-hidden="true"></span></a></li><li><a href="#lesson-10" data-id="lesson-10"><span class="num">10</span><span class="t">Decisions and loops</span><span class="tick" data-id="lesson-10" aria-hidden="true"></span></a></li><li><a href="#project" data-id="project"><span class="num">★</span><span class="t">Final project</span><span class="tick" data-id="project" aria-hidden="true"></span></a></li></ul>
+      </div>
+      <div>
+        <h2>Reference</h2>
+        <ul><li><a href="#cheatsheet" data-id="cheatsheet"><span class="num">?</span><span class="t">Cheat sheet</span><span></span></a></li></ul>
+      </div>
+      <div class="progress"><span id="progress-text">0 of 11 done</span><div class="bar"><i id="progress-bar"></i></div></div>
+    </div>
+  </aside>
+
+  <main id="main">
+
+<section class="view" id="home" data-title="Start here">
+  <header class="hero">
+    <p class="eyebrow">A course for complete beginners · Ubuntu Linux</p>
+    <h1>Bash, one command at a time</h1>
+    <p class="lede">Ten lessons and a final project that take you from never having opened a terminal
+    to writing your own Bash scripts. Each lesson takes about 45–60 minutes.</p>
+    <p class="hero-actions"><a class="btn" href="#lesson-1">Start lesson 1</a> <a class="btn ghost" href="#setup">Set up the practice folder</a></p>
+  </header>
+  <div class="prose">
+    <h2>What you will be able to do</h2>
+    <ul>
+      <li>open a terminal and move around the file system without a mouse</li>
+      <li>create, copy, move, rename and delete files and folders</li>
+      <li>read and edit text files from the terminal</li>
+      <li>find files and search for words inside them</li>
+      <li>combine small commands into powerful ones with pipes</li>
+      <li>install programs and understand file permissions</li>
+      <li>write small Bash scripts with variables, questions, decisions and loops</li>
+    </ul>
+    <h2>The lessons</h2>
+  </div>
+  <ol class="toc"><li><a href="#lesson-1"><span class="num">01</span><span class="t">Meet the terminal</span><span class="c">echo · date · whoami · history</span><span class="tick" data-id="lesson-1" aria-hidden="true"></span></a></li><li><a href="#lesson-2"><span class="num">02</span><span class="t">Finding your way around</span><span class="c">pwd · ls · cd</span><span class="tick" data-id="lesson-2" aria-hidden="true"></span></a></li><li><a href="#lesson-3"><span class="num">03</span><span class="t">Making and changing files</span><span class="c">mkdir · cp · mv · rm</span><span class="tick" data-id="lesson-3" aria-hidden="true"></span></a></li><li><a href="#lesson-4"><span class="num">04</span><span class="t">Reading and writing text</span><span class="c">cat · less · head · nano</span><span class="tick" data-id="lesson-4" aria-hidden="true"></span></a></li><li><a href="#lesson-5"><span class="num">05</span><span class="t">Getting help</span><span class="c">man · --help · apropos</span><span class="tick" data-id="lesson-5" aria-hidden="true"></span></a></li><li><a href="#lesson-6"><span class="num">06</span><span class="t">Searching</span><span class="c">grep · find</span><span class="tick" data-id="lesson-6" aria-hidden="true"></span></a></li><li><a href="#lesson-7"><span class="num">07</span><span class="t">Pipes and redirection</span><span class="c">&gt; · | · sort · uniq</span><span class="tick" data-id="lesson-7" aria-hidden="true"></span></a></li><li><a href="#lesson-8"><span class="num">08</span><span class="t">Permissions and installing programs</span><span class="c">chmod · sudo · apt</span><span class="tick" data-id="lesson-8" aria-hidden="true"></span></a></li><li><a href="#lesson-9"><span class="num">09</span><span class="t">Your first scripts</span><span class="c">#!/bin/bash · $var · read</span><span class="tick" data-id="lesson-9" aria-hidden="true"></span></a></li><li><a href="#lesson-10"><span class="num">10</span><span class="t">Decisions and loops</span><span class="c">if · for · while</span><span class="tick" data-id="lesson-10" aria-hidden="true"></span></a></li><li><a href="#project"><span class="num">★</span><span class="t">Final project</span><span class="c">everything</span><span class="tick" data-id="project" aria-hidden="true"></span></a></li></ol>
+  <div class="prose">
+    <h2>How each lesson works</h2>
+    <div class="table"><table>
+      <tr><th>Part</th><th>What happens</th></tr>
+      <tr><td><strong>Goals</strong></td><td>What you will be able to do after the lesson</td></tr>
+      <tr><td><strong>Learn</strong></td><td>Short explanations, each followed by commands to type</td></tr>
+      <tr><td><strong>Try it</strong></td><td>Small tasks to do straight away</td></tr>
+      <tr><td><strong>Exercises</strong></td><td>Practice tasks, with answers folded away at the end of the lesson</td></tr>
+      <tr><td><strong>Quiz</strong></td><td>Quick questions to check understanding</td></tr>
+      <tr><td><strong>Recap</strong></td><td>The lesson's commands in one table</td></tr>
+    </table></div>
+    <h2>Tips for the learner</h2>
+    <ul>
+      <li><strong>Type every command yourself.</strong> Don't copy and paste the lesson commands: typing is how your fingers and memory learn. (The copy buttons are for the teacher and for long scripts.)</li>
+      <li><strong>You cannot break the computer</strong> by working inside <code>~/playground</code>. Experiment!</li>
+      <li>When stuck, press <kbd>Ctrl</kbd> + <kbd>C</kbd>. It stops whatever is running.</li>
+      <li>Error messages are not failures. Read them: they usually say exactly what is wrong.</li>
+      <li>Use the <kbd>Tab</kbd> key. It finishes names for you.</li>
+      <li>Uppercase and lowercase are different: <code>Story.txt</code> and <code>story.txt</code> are two different files.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="view" id="setup" data-title="Setup" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Before lesson 1 · for the teacher</p>
+    <h1>Set up the practice folder</h1>
+    <p class="prompt"><span class="ps1">teacher@ubuntu:~$</span> bash setup-playground.sh</p>
+  </header>
+  <div class="prose">
+    <p>The exercises use a practice folder called <code>~/playground</code>, full of files made for the course:
+    a treasure hunt, a messy folder to tidy, a story, a server log, lists and a scores table.
+    The script below creates it and touches nothing else.</p>
+    <ol>
+      <li>Use a computer with Ubuntu (any recent desktop version).</li>
+      <li>Open a terminal with <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>T</kbd>.</li>
+      <li>Open a new file in the nano editor:
+      <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>nano setup-playground.sh
+</code></pre></div></li>
+      <li>Press <strong>Copy</strong> on the script below, then paste it into nano with <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>.</li>
+      <li>Save with <kbd>Ctrl</kbd> + <kbd>O</kbd>, <kbd>Enter</kbd>, and exit with <kbd>Ctrl</kbd> + <kbd>X</kbd>.</li>
+      <li>Run it:
+      <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>bash setup-playground.sh
+</code></pre></div></li>
+    </ol>
+    <p>If the playground gets messed up, get a fresh copy at any time with:</p>
+    <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>bash setup-playground.sh --reset
+</code></pre></div>
+    <p>Lesson 8 installs a few small programs with <code>sudo apt install</code>, so the learner needs
+    the computer's password or a teacher sitting next to them for that lesson.</p>
+    <h2>setup-playground.sh</h2>
+    <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Creates the practice folder (&quot;playground&quot;) used by the exercises in the course.
+#
+# Usage:
+#   bash setup-playground.sh           create ~/playground (refuses if it already exists)
+#   bash setup-playground.sh --reset   delete ~/playground and create a fresh copy
+
+PLAYGROUND=&quot;$HOME/playground&quot;
+
+if [ -e &quot;$PLAYGROUND&quot; ]; then
+    if [ &quot;$1&quot; = &quot;--reset&quot; ]; then
+        echo &quot;Removing the old playground...&quot;
+        rm -rf &quot;$PLAYGROUND&quot;
+    else
+        echo &quot;The playground already exists at $PLAYGROUND&quot;
+        echo &quot;To start again from scratch run:  bash $0 --reset&quot;
+        exit 1
+    fi
+fi
+
+mkdir -p &quot;$PLAYGROUND&quot;
+cd &quot;$PLAYGROUND&quot; || exit 1
+
+# --- welcome -------------------------------------------------------------
+cat &gt; welcome.txt &lt;&lt;'EOF'
+Welcome to your playground!
+
+Everything in this folder exists only so you can practise.
+You can look at it, change it, move it and even delete it.
+If you break something, ask for the playground to be reset
+and you get a fresh copy.
+
+Have fun!
+EOF
+
+# --- lists for sorting and counting --------------------------------------
+cat &gt; animals.txt &lt;&lt;'EOF'
+cat
+dog
+zebra
+elephant
+cat
+lion
+giraffe
+dog
+penguin
+cat
+koala
+lion
+octopus
+dog
+bear
+EOF
+
+cat &gt; numbers.txt &lt;&lt;'EOF'
+42
+7
+100
+3
+58
+21
+9
+77
+15
+64
+EOF
+
+cat &gt; scores.csv &lt;&lt;'EOF'
+name,game,points
+Ala,chess,12
+Bartek,football,30
+Celina,chess,25
+Darek,minecraft,47
+Ewa,football,18
+Franek,minecraft,52
+Gosia,chess,9
+Henryk,chess,41
+EOF
+
+# --- a longer text for head, tail, less and grep -------------------------
+cat &gt; story.txt &lt;&lt;'EOF'
+The Robot Who Wanted to Learn
+=============================
+
+Once upon a time, in a small workshop at the edge of a town,
+there lived a little robot called Bit.
+Bit could sweep the floor, carry boxes and make tea,
+but Bit was not happy.
+
+&quot;I want to learn new things,&quot; said Bit one morning.
+The old inventor looked up from her desk and smiled.
+&quot;Then you must learn to talk to the computer,&quot; she said.
+
+The computer sat in the corner of the workshop.
+It had a black screen with a small blinking cursor.
+Bit typed the first word it could think of: hello.
+The computer answered: command not found.
+
+Bit was confused, but did not give up.
+The inventor showed Bit a word called echo.
+Bit typed: echo hello
+And the computer answered: hello
+
+From that day on, Bit learned one new command every day.
+On Monday Bit learned ls, and saw all the files in the folder.
+On Tuesday Bit learned cd, and walked from folder to folder.
+On Wednesday Bit learned mkdir, and built new folders.
+On Thursday Bit learned grep, and found words in long files.
+On Friday Bit learned to write scripts,
+and the computer started doing Bit's work for it.
+
+On Saturday Bit swept the floor, carried the boxes and made tea,
+all at the same time, with one small script.
+
+On Sunday Bit rested,
+and the computer said: hello, Bit.
+
+THE END
+EOF
+
+# --- a log file for searching --------------------------------------------
+levels=(INFO INFO INFO WARNING INFO ERROR INFO INFO WARNING INFO)
+messages=(
+    &quot;user ala logged in&quot;
+    &quot;backup started&quot;
+    &quot;backup finished&quot;
+    &quot;disk is 80% full&quot;
+    &quot;user bartek logged in&quot;
+    &quot;printer not responding&quot;
+    &quot;user ala logged out&quot;
+    &quot;email sent&quot;
+    &quot;password will expire soon&quot;
+    &quot;user celina logged in&quot;
+)
+for hour in 08 09 10 11 12; do
+    for i in &quot;${!levels[@]}&quot;; do
+        printf '2026-03-14 %s:%02d:00 %s %s\n' &quot;$hour&quot; $((i * 5)) &quot;${levels[$i]}&quot; &quot;${messages[$i]}&quot;
+    done
+done &gt; server.log
+mkdir logs
+mv server.log logs/
+
+# --- shopping lists ------------------------------------------------------
+mkdir shopping
+printf 'bread\nmilk\napples\ncheese\n' &gt; shopping/monday.txt
+printf 'pasta\ntomatoes\nmilk\nchocolate\n' &gt; shopping/tuesday.txt
+
+# --- a messy folder to tidy up -------------------------------------------
+mkdir messy
+touch messy/{holiday,beach,birthday,cat}.jpg
+touch messy/{dog,sunset}.png
+touch messy/{song1,song2,song3}.mp3
+touch messy/{homework,notes,ideas}.txt
+touch messy/budget.csv
+
+# --- a treasure hunt for practising cd and ls ---------------------------
+mkdir -p treasure/forest/old_tree treasure/mountain/cave/.hidden_chest treasure/river
+cat &gt; treasure/start.txt &lt;&lt;'EOF'
+Welcome, explorer!
+
+Your first clue is waiting in the forest.
+Go into the forest folder and look around.
+EOF
+cat &gt; treasure/forest/clue.txt &lt;&lt;'EOF'
+Well done! Clue number 2:
+Something is hiding inside the old tree.
+EOF
+cat &gt; treasure/forest/old_tree/clue.txt &lt;&lt;'EOF'
+Clue number 3:
+Go back up TWO levels (to the treasure folder),
+then climb the mountain and enter the cave.
+Tip: cd ../.. takes you up two levels.
+EOF
+cat &gt; treasure/mountain/cave/clue.txt &lt;&lt;'EOF'
+Clue number 4:
+The cave looks empty... but is it?
+Some folders are hidden. Their names start with a dot.
+Try:  ls -a
+EOF
+cat &gt; treasure/mountain/cave/.hidden_chest/treasure.txt &lt;&lt;'EOF'
+*** YOU FOUND THE TREASURE! ***
+
+You can now move around the file system like a real explorer.
+The secret word is: PENGUIN
+EOF
+cat &gt; treasure/river/clue.txt &lt;&lt;'EOF'
+Just fish here. No clue. Try somewhere else!
+EOF
+
+echo &quot;Done! Your playground is ready at: $PLAYGROUND&quot;
+</code></pre></div>
+  </div>
+</section>
+
+<section class="view" id="cheatsheet" data-title="Cheat sheet" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Every command from the course</p>
+    <h1>Cheat sheet</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~$</span> man bash</p>
+  </header>
+  <div class="prose cheat"><h2>Keys</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>T</kbd></td>
+<td>open a terminal</td>
+</tr>
+<tr>
+<td><kbd>Tab</kbd> / <kbd>Tab Tab</kbd></td>
+<td>complete a name / show choices</td>
+</tr>
+<tr>
+<td><kbd>↑</kbd> <kbd>↓</kbd></td>
+<td>previous / next command</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd>+<kbd>C</kbd></td>
+<td>stop / cancel</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd>+<kbd>L</kbd></td>
+<td>clear the screen</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> / <code>V</code></td>
+<td>copy / paste</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>quit <code>less</code>, <code>man</code>, <code>top</code></td>
+</tr>
+</tbody>
+</table></div>
+<h2>Moving around</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pwd</code></td>
+<td>where am I?</td>
+</tr>
+<tr>
+<td><code>ls</code>, <code>ls -la</code>, <code>ls -lh</code></td>
+<td>list (all, long, readable sizes)</td>
+</tr>
+<tr>
+<td><code>cd folder</code>, <code>cd ..</code>, <code>cd</code>, <code>cd -</code></td>
+<td>go into / up / home / back</td>
+</tr>
+<tr>
+<td><code>~</code> <code>.</code> <code>..</code> <code>/</code></td>
+<td>home / here / up / root</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Files and folders</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mkdir -p a/b</code></td>
+<td>make folders</td>
+</tr>
+<tr>
+<td><code>touch f</code></td>
+<td>make an empty file</td>
+</tr>
+<tr>
+<td><code>cp a b</code>, <code>cp -r A B</code></td>
+<td>copy file / folder</td>
+</tr>
+<tr>
+<td><code>mv a b</code></td>
+<td>move or rename</td>
+</tr>
+<tr>
+<td><code>rm f</code>, <code>rm -i f</code>, <code>rm -r D</code></td>
+<td>delete (forever!)</td>
+</tr>
+<tr>
+<td><code>*</code> <code>?</code> <code>[ab]</code> <code>{1..5}</code></td>
+<td>wildcards / expansion</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Reading and writing</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cat f</code>, <code>less f</code></td>
+<td>show / page through</td>
+</tr>
+<tr>
+<td><code>head -n 5 f</code>, <code>tail -n 5 f</code></td>
+<td>first / last lines</td>
+</tr>
+<tr>
+<td><code>wc -l f</code></td>
+<td>count lines</td>
+</tr>
+<tr>
+<td><code>nano f</code></td>
+<td>edit (<kbd>Ctrl</kbd>+<kbd>O</kbd> save, <kbd>Ctrl</kbd>+<kbd>X</kbd> exit)</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Help</h2>
+<p><code>cmd --help</code> · <code>man cmd</code> · <code>help cd</code> · <code>apropos word</code> · <code>type cmd</code></p>
+<h2>Searching</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>grep word f</code></td>
+<td>lines containing word</td>
+</tr>
+<tr>
+<td><code>grep -i -c -n -v -w -r</code></td>
+<td>ignore case, count, numbers, invert, whole word, recursive</td>
+</tr>
+<tr>
+<td><code>find . -name "*.txt"</code></td>
+<td>find files by name</td>
+</tr>
+<tr>
+<td><code>find . -type d</code></td>
+<td>find folders</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Pipes and redirection</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cmd &gt; f</code>, <code>cmd &gt;&gt; f</code></td>
+<td>save / append output</td>
+</tr>
+<tr>
+<td><code>cmd 2&gt;/dev/null</code></td>
+<td>hide errors</td>
+</tr>
+<tr>
+<td><code>a | b</code></td>
+<td>send output of a into b</td>
+</tr>
+<tr>
+<td><code>sort</code>, <code>sort -n</code>, <code>sort -r</code></td>
+<td>sort / numbers / reverse</td>
+</tr>
+<tr>
+<td><code>uniq</code>, <code>uniq -c</code></td>
+<td>remove / count duplicates (sort first)</td>
+</tr>
+<tr>
+<td><code>cut -d, -f2</code></td>
+<td>column 2</td>
+</tr>
+</tbody>
+</table></div>
+<h2>System</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>chmod +x f</code></td>
+<td>make runnable</td>
+</tr>
+<tr>
+<td><code>sudo cmd</code></td>
+<td>run as admin (careful!)</td>
+</tr>
+<tr>
+<td><code>sudo apt update</code>, <code>sudo apt install p</code></td>
+<td>update list / install</td>
+</tr>
+<tr>
+<td><code>ps</code>, <code>top</code>, <code>kill PID</code></td>
+<td>processes</td>
+</tr>
+<tr>
+<td><code>df -h</code>, <code>du -sh D</code></td>
+<td>disk space / folder size</td>
+</tr>
+</tbody>
+</table></div>
+<h2>Scripts</h2>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+name=&quot;Ala&quot;                      # variable (no spaces around =)
+echo &quot;Hi $name&quot;                 # use it
+today=$(date +%A)               # command output
+sum=$(( 3 + 4 ))                # maths
+read -p &quot;Age? &quot; age             # ask
+echo &quot;First argument: $1, count: $#&quot;
+
+if [ &quot;$age&quot; -ge 18 ]; then      # -eq -ne -lt -le -gt -ge
+    echo &quot;adult&quot;                # =  !=  -z  -n   (text)
+elif [ -f &quot;notes.txt&quot; ]; then   # -e -f -d        (files)
+    echo &quot;file exists&quot;
+else
+    echo &quot;neither&quot;
+fi
+
+for i in {1..5}; do echo &quot;$i&quot;; done
+
+while [ &quot;$n&quot; -gt 0 ]; do n=$(( n - 1 )); done
+
+case &quot;$x&quot; in
+    a|b) echo &quot;a or b&quot; ;;
+    *)   echo &quot;something else&quot; ;;
+esac
+</code></pre></div>
+<p>Run it: <code>chmod +x script.sh</code> then <code>./script.sh</code></p></div>
+</section>
+
+<section class="view" id="lesson-1" data-title="Meet the terminal" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 1 of 10</p>
+    <h1>Meet the terminal</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> echo · date · whoami · history</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Know what the terminal and Bash are</li>
+<li>Open a terminal and type your first commands</li>
+<li>Use the keyboard shortcuts that save you time</li>
+</ul>
+<h2>Learn</h2>
+<h3>What is the terminal?</h3>
+<p>Usually you tell the computer what to do by clicking with the mouse. The
+<strong>terminal</strong> is another way: you <strong>type</strong> instructions, called <strong>commands</strong>, and
+the computer types back its answer.</p>
+<p>The program that reads your commands and runs them is called the <strong>shell</strong>. On
+Ubuntu the shell is called <strong>Bash</strong>. That is why this course is called "Bash for
+Beginners".</p>
+<p>Why bother, when you have a mouse?</p>
+<ul>
+<li>Many jobs are much faster to type than to click.</li>
+<li>You can repeat a job a thousand times with one command.</li>
+<li>Servers, robots, Raspberry Pis and supercomputers are mostly controlled this way.</li>
+<li>Programmers use it every day.</li>
+</ul>
+<h3>Opening the terminal</h3>
+<p>Press <strong><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>T</kbd></strong> (all three keys at once).</p>
+<p>Or: click <em>Show Applications</em> in the bottom-left corner, type <code>terminal</code> and
+press <kbd>Enter</kbd>.</p>
+<p>A window opens with a line that looks something like this:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>mieszko@laptop:~$
+</code></pre></div>
+<p>This is the <strong>prompt</strong>. It means "I am ready, type a command". It tells you:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mieszko</code></td>
+<td>your user name</td>
+</tr>
+<tr>
+<td><code>laptop</code></td>
+<td>the computer's name</td>
+</tr>
+<tr>
+<td><code>~</code></td>
+<td>the folder you are in (<code>~</code> means your home folder)</td>
+</tr>
+<tr>
+<td><code>$</code></td>
+<td>the end of the prompt; you type after it</td>
+</tr>
+</tbody>
+</table></div>
+<p>In this course, when you see a command like this:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo hello
+</code></pre></div>
+<p>type it after the <code>$</code> and press <strong><kbd>Enter</kbd></strong>. Do not type the <code>$</code> itself.</p>
+<h3>Your first commands</h3>
+<p><code>echo</code> repeats whatever you write after it:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo hello
+echo My name is Mieszko
+</code></pre></div>
+<p><code>date</code> shows today's date and time:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>date
+</code></pre></div>
+<p><code>whoami</code> tells you your user name:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>whoami
+</code></pre></div>
+<p><code>hostname</code> tells you the computer's name:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>hostname
+</code></pre></div>
+<p><code>uptime</code> shows how long the computer has been switched on:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>uptime
+</code></pre></div>
+<p><code>clear</code> wipes the screen clean (your commands are not lost, the screen is just tidied):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>clear
+</code></pre></div>
+<h3>What a command looks like</h3>
+<p>Most commands have three parts:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>command   -options   arguments
+  ls        -l        Documents
+</code></pre></div>
+<ul>
+<li>the <strong>command</strong>: what to do</li>
+<li><strong>options</strong> (also called flags): <em>how</em> to do it; they usually start with <code>-</code></li>
+<li><strong>arguments</strong>: <em>what</em> to do it to</li>
+</ul>
+<p>Spaces matter! They separate the parts. <code>echo hello</code> works; <code>echohello</code> does not.</p>
+<p>Try <code>date</code> with an option:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>date +%A
+date +%Y
+</code></pre></div>
+<p>The first prints the day of the week, the second prints the year.</p>
+<h3>When the computer does not understand</h3>
+<p>Type something that is not a command:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>hello
+</code></pre></div>
+<p>You get:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>hello: command not found
+</code></pre></div>
+<p>This is completely normal. The computer is just saying "I don't know a command
+called that". Check your spelling and try again.</p>
+<h3>Keyboard superpowers</h3>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><kbd>↑</kbd> and <kbd>↓</kbd></td>
+<td>go back through commands you typed before</td>
+</tr>
+<tr>
+<td><kbd>Tab</kbd></td>
+<td>finish a command or name for you (press twice to see choices)</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>C</kbd></td>
+<td>stop the running command / cancel what you are typing</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>L</kbd></td>
+<td>clear the screen (same as <code>clear</code>)</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></td>
+<td>copy selected text in the terminal</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd></td>
+<td>paste into the terminal</td>
+</tr>
+</tbody>
+</table></div>
+<p>Note: in the terminal, plain <kbd>Ctrl</kbd> + <kbd>C</kbd> does <strong>not</strong> copy! It stops things.</p>
+<p>Try <kbd>Tab</kbd> now: type <code>whoa</code> and press <kbd>Tab</kbd>. Bash finishes the word <code>whoami</code> for you.</p>
+<h3>History</h3>
+<p>Bash remembers what you typed:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>history
+</code></pre></div>
+<p>Each line has a number. To run command number 5 again, type <code>!5</code>.
+To run the very last command again, type <code>!!</code>.</p>
+<h3>Closing the terminal</h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>exit
+</code></pre></div>
+<h2>Try it</h2>
+<ol>
+<li>Open a terminal with the keyboard shortcut.</li>
+<li>Make the computer say <code>I am learning Bash</code>.</li>
+<li>Find out your user name and the computer's name.</li>
+<li>Use <kbd>↑</kbd> to bring back the <code>echo</code> command, change the text, and run it again.</li>
+<li>Type <code>ech</code> and press <kbd>Tab</kbd>. What happens?</li>
+<li>Close the terminal with <code>exit</code> and open it again.</li>
+</ol>
+<h2>Exercises</h2>
+<ol>
+<li>Print the current date and time.</li>
+<li>Print only the current month name. Hint: <code>date +%B</code>.</li>
+<li>Print a message with three lines in one command. Hint: <code>echo -e "one\ntwo\nthree"</code>
+   (<code>\n</code> means "new line" and <code>-e</code> tells echo to understand it).</li>
+<li>Run <code>cal</code>. If it says "command not found", don't worry: you'll learn how to
+   install it in Lesson 8. Write down what Ubuntu suggests.</li>
+<li>Use <code>history</code> to find the number of your first <code>echo</code> command and run it again with <code>!</code> and the number.</li>
+<li>Type <code>sleep 30</code> (it waits 30 seconds doing nothing). Don't wait: stop it.</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>What is the name of the shell we are learning?</li>
+<li>What does <code>~</code> in the prompt mean?</li>
+<li>Which key finishes a word for you?</li>
+<li>What does <kbd>Ctrl</kbd> + <kbd>C</kbd> do in a terminal?</li>
+<li>What does <code>command not found</code> usually mean?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>echo text</code></td>
+<td>print text</td>
+</tr>
+<tr>
+<td><code>date</code></td>
+<td>show date and time</td>
+</tr>
+<tr>
+<td><code>whoami</code></td>
+<td>show your user name</td>
+</tr>
+<tr>
+<td><code>hostname</code></td>
+<td>show the computer's name</td>
+</tr>
+<tr>
+<td><code>uptime</code></td>
+<td>how long the computer has been on</td>
+</tr>
+<tr>
+<td><code>clear</code></td>
+<td>clear the screen</td>
+</tr>
+<tr>
+<td><code>history</code></td>
+<td>list previous commands</td>
+</tr>
+<tr>
+<td><code>exit</code></td>
+<td>close the terminal</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Exercises</strong></p>
+<ol>
+<li><code>date</code></li>
+<li><code>date +%B</code></li>
+<li><code>echo -e "one\ntwo\nthree"</code></li>
+<li>On a fresh Ubuntu you'll see something like:
+   <code>Command 'cal' not found, but can be installed with: sudo apt install ncal</code>.
+   Ubuntu tells you which package to install. You'll do that in Lesson 8.</li>
+<li><code>history</code>, find the number (say 7), then <code>!7</code>.</li>
+<li>Press <kbd>Ctrl</kbd> + <kbd>C</kbd>.</li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li>Bash.</li>
+<li>Your home folder.</li>
+<li><kbd>Tab</kbd>.</li>
+<li>It stops the running command (it does <strong>not</strong> copy).</li>
+<li>There's no command with that name: a typo, or the program isn't installed.</li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-1" data-id="lesson-1"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-2" data-title="Finding your way around" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 2 of 10</p>
+    <h1>Finding your way around</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> pwd · ls · cd</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Understand how files and folders are organised in Linux</li>
+<li>Know where you are, look around, and move to other folders</li>
+<li>Understand paths, <code>~</code>, <code>.</code> and <code>..</code></li>
+<li>Find hidden files</li>
+</ul>
+<h2>Learn</h2>
+<h3>Files and folders are a tree</h3>
+<p>Everything on the computer is stored in <strong>files</strong>. Files are kept in
+<strong>folders</strong> (in the terminal, folders are often called <strong>directories</strong>: same
+thing). Folders can contain other folders, so they form a tree, upside down:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>/                       &lt;- the &quot;root&quot;: the very top
+├── home
+│   └── mieszko         &lt;- your home folder (~)
+│       ├── Desktop
+│       ├── Documents
+│       ├── Downloads
+│       ├── Pictures
+│       └── playground  &lt;- our practice folder
+├── usr
+├── etc
+└── tmp
+</code></pre></div>
+<h3>Where am I? <code>pwd</code></h3>
+<p><code>pwd</code> means <strong>p</strong>rint <strong>w</strong>orking <strong>d</strong>irectory: it shows the folder you are in now.</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>pwd
+</code></pre></div>
+<p>You'll see something like <code>/home/mieszko</code>. That's your <strong>home folder</strong>.</p>
+<h3>What's here? <code>ls</code></h3>
+<p><code>ls</code> means <strong>l</strong>i<strong>s</strong>t. It shows what is in the current folder:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls
+</code></pre></div>
+<p>Ubuntu shows folders in <strong>blue</strong> and ordinary files in white.</p>
+<p>Useful options:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls -l        # long list: size, date, owner
+ls -a        # all: show hidden files too
+ls -la       # both together
+ls -lh       # sizes in readable units like K and M
+</code></pre></div>
+<p>Anything after a <code>#</code> is a <strong>comment</strong>. Bash ignores it; it's there to explain things to you.
+You don't need to type the comments.</p>
+<p>You can also list a folder without going into it:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls Documents
+ls /
+</code></pre></div>
+<h3>Moving around: <code>cd</code></h3>
+<p><code>cd</code> means <strong>c</strong>hange <strong>d</strong>irectory.</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd playground
+pwd
+ls
+</code></pre></div>
+<p>Now you're inside <code>playground</code>. To go back <strong>up</strong> one level use <code>..</code>
+(two dots mean "the folder above"):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ..
+pwd
+</code></pre></div>
+<p>Some special shortcuts:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Takes you to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cd</code></td>
+<td>your home folder (from anywhere)</td>
+</tr>
+<tr>
+<td><code>cd ~</code></td>
+<td>also your home folder</td>
+</tr>
+<tr>
+<td><code>cd ..</code></td>
+<td>one folder up</td>
+</tr>
+<tr>
+<td><code>cd ../..</code></td>
+<td>two folders up</td>
+</tr>
+<tr>
+<td><code>cd -</code></td>
+<td>back to where you were before</td>
+</tr>
+<tr>
+<td><code>cd /</code></td>
+<td>the root of the whole tree</td>
+</tr>
+</tbody>
+</table></div>
+<p>Remember <kbd>Tab</kbd>! Type <code>cd pla</code> and press <kbd>Tab</kbd>: Bash completes <code>playground/</code>.</p>
+<h3>Paths</h3>
+<p>A <strong>path</strong> is the address of a file or folder.</p>
+<p>An <strong>absolute path</strong> starts with <code>/</code> and gives the full address from the root.
+It works from anywhere:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd /home/mieszko/playground/treasure
+</code></pre></div>
+<p>(Use your own user name instead of <code>mieszko</code>. <code>whoami</code> tells you what it is.)</p>
+<p>A <strong>relative path</strong> does <strong>not</strong> start with <code>/</code>. It starts from where you are now:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground       # start from home
+cd treasure/forest    # relative: from playground into treasure, then forest
+</code></pre></div>
+<p><code>~</code> is a shortcut for your home folder, so <code>~/playground</code> is the same as
+<code>/home/mieszko/playground</code>.</p>
+<p>One more: a single dot <code>.</code> means "this folder, right here". It will be useful later.</p>
+<h3>Hidden files</h3>
+<p>Files and folders whose names start with a dot (like <code>.bashrc</code>) are <strong>hidden</strong>.
+They're usually settings files. Normal <code>ls</code> doesn't show them; <code>ls -a</code> does:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd
+ls
+ls -a
+</code></pre></div>
+<h3>Names with spaces</h3>
+<p>Bash uses spaces to separate parts of a command, so names with spaces need
+quotes:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd &quot;My Folder&quot;
+</code></pre></div>
+<p>Or avoid the problem: use <code>_</code> or <code>-</code> instead of spaces in your own file names,
+like <code>my_folder</code> or <code>my-folder</code>.</p>
+<h3>A tree picture</h3>
+<p>The <code>tree</code> program draws folders as a tree. It may not be installed yet; you'll
+install it in Lesson 8. Until then, <code>ls -R</code> (recursive) lists everything inside,
+folder by folder:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls -R ~/playground/treasure
+</code></pre></div>
+<h2>Try it</h2>
+<ol>
+<li>Go to your home folder and check you're there with <code>pwd</code>.</li>
+<li>List what's in it. Then list it again including hidden files.</li>
+<li>Go into <code>playground</code> and list it in the long format.</li>
+<li>Go to <code>/</code> and look around. Then go back with <code>cd -</code>.</li>
+<li>Go back home with one short command.</li>
+</ol>
+<h2>Exercises</h2>
+<h3>The treasure hunt</h3>
+<p>There is a treasure hidden somewhere in <code>~/playground/treasure</code>. Find it using
+<strong>only</strong> <code>cd</code>, <code>ls</code>, <code>pwd</code> and <code>cat</code> (<code>cat file.txt</code> shows what's inside a file;
+you'll learn more about it in Lesson 4).</p>
+<p>Start like this:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground/treasure
+ls
+cat start.txt
+</code></pre></div>
+<p>Follow the clues. Write down the <strong>secret word</strong> at the end.</p>
+<h3>More exercises</h3>
+<ol>
+<li>From your home folder, list the contents of <code>~/playground/shopping</code> without using <code>cd</code>.</li>
+<li>Go into <code>~/playground/treasure/forest/old_tree</code>. Now go back to <code>~/playground</code> using a <strong>relative</strong> path.</li>
+<li>Do the same thing using an <strong>absolute</strong> path.</li>
+<li>What is in the folder <code>/home</code>? How many users does the computer have?</li>
+<li>Run <code>ls -l ~/playground</code>. Which items are folders? How can you tell, other than the colour?
+   (Hint: look at the first letter of each line.)</li>
+<li>How many hidden files and folders are in your home folder?</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>What does <code>pwd</code> stand for?</li>
+<li>What is the difference between <code>/home</code> and <code>home</code>?</li>
+<li>What does <code>..</code> mean?</li>
+<li>You're in <code>/home/mieszko/playground/treasure</code>. Where does <code>cd ../..</code> take you?</li>
+<li>How do you show hidden files?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pwd</code></td>
+<td>show which folder you are in</td>
+</tr>
+<tr>
+<td><code>ls</code></td>
+<td>list files and folders</td>
+</tr>
+<tr>
+<td><code>ls -l</code> / <code>-a</code> / <code>-h</code></td>
+<td>long list / include hidden / readable sizes</td>
+</tr>
+<tr>
+<td><code>cd folder</code></td>
+<td>go into a folder</td>
+</tr>
+<tr>
+<td><code>cd ..</code></td>
+<td>go up one level</td>
+</tr>
+<tr>
+<td><code>cd</code> or <code>cd ~</code></td>
+<td>go home</td>
+</tr>
+<tr>
+<td><code>cd -</code></td>
+<td>go back to the previous folder</td>
+</tr>
+<tr>
+<td><code>ls -R</code></td>
+<td>list everything inside, recursively</td>
+</tr>
+</tbody>
+</table></div>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/</code></td>
+<td>the root (when at the start of a path) or separator between folders</td>
+</tr>
+<tr>
+<td><code>~</code></td>
+<td>your home folder</td>
+</tr>
+<tr>
+<td><code>.</code></td>
+<td>this folder</td>
+</tr>
+<tr>
+<td><code>..</code></td>
+<td>the folder above</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Treasure hunt</strong></p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground/treasure
+cat start.txt
+cd forest
+cat clue.txt
+cd old_tree
+cat clue.txt
+cd ../..
+cd mountain/cave
+cat clue.txt
+ls -a
+cd .hidden_chest
+cat treasure.txt
+</code></pre></div>
+<p>The secret word is <strong>PENGUIN</strong>. (The <code>river</code> folder is a dead end.)</p>
+<p><strong>Exercises</strong></p>
+<ol>
+<li><code>ls ~/playground/shopping</code></li>
+<li><code>cd ~/playground/treasure/forest/old_tree</code> then <code>cd ../../..</code></li>
+<li><code>cd /home/YOUR_NAME/playground</code> (or <code>cd ~/playground</code>, which Bash turns into the absolute path)</li>
+<li><code>ls /home</code>. Normally each user has one folder there. Often it's only you.</li>
+<li>Lines starting with <code>d</code> are directories; lines starting with <code>-</code> are files.</li>
+<li><code>ls -a ~</code> and count the names starting with <code>.</code> (don't count <code>.</code> and <code>..</code>).
+   The number depends on the computer.</li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li>Print working directory.</li>
+<li><code>/home</code> is an absolute path (the <code>home</code> folder in the root). <code>home</code> is relative:
+   a folder called <code>home</code> inside the current folder.</li>
+<li>The folder above the current one.</li>
+<li><code>/home/mieszko</code></li>
+<li><code>ls -a</code></li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-2" data-id="lesson-2"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-3" data-title="Making and changing files" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 3 of 10</p>
+    <h1>Making and changing files</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> mkdir · cp · mv · rm</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Create folders and empty files</li>
+<li>Copy, move, rename and delete files and folders</li>
+<li>Use wildcards to work with many files at once</li>
+<li>Delete things <strong>safely</strong></li>
+</ul>
+<h2>Learn</h2>
+<p>Do everything in this lesson inside the playground:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground
+</code></pre></div>
+<h3>Making folders: <code>mkdir</code></h3>
+<p><code>mkdir</code> = <strong>m</strong>a<strong>k</strong>e <strong>dir</strong>ectory.</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mkdir games
+ls
+</code></pre></div>
+<p>Several at once:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mkdir music films books
+</code></pre></div>
+<p>A folder inside a folder that doesn't exist yet needs <code>-p</code> (parents):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mkdir -p school/maths/homework
+ls -R school
+</code></pre></div>
+<h3>Making empty files: <code>touch</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>touch games/list.txt
+ls games
+</code></pre></div>
+<p><code>touch</code> creates an empty file (or, if the file already exists, just updates its
+date). Several at once:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>touch books/a.txt books/b.txt books/c.txt
+</code></pre></div>
+<h3>Copying: <code>cp</code></h3>
+<p><code>cp</code> = <strong>c</strong>o<strong>p</strong>y. First the thing to copy, then where to put it:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cp welcome.txt welcome_copy.txt     # copy and give it a new name
+cp welcome.txt books/               # copy into a folder, keep the name
+ls books
+</code></pre></div>
+<p>To copy a whole folder with everything inside, add <code>-r</code> (recursive):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cp -r shopping shopping_backup
+ls shopping_backup
+</code></pre></div>
+<h3>Moving and renaming: <code>mv</code></h3>
+<p><code>mv</code> = <strong>m</strong>o<strong>v</strong>e. It moves a file to another folder:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mv welcome_copy.txt games/
+ls games
+</code></pre></div>
+<p>In Linux, <strong>renaming is moving</strong> to a new name in the same folder:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mv games/welcome_copy.txt games/hello.txt
+ls games
+</code></pre></div>
+<p><code>mv</code> works on folders too, without needing <code>-r</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mv films movies
+</code></pre></div>
+<h3>Deleting: <code>rm</code> and <code>rmdir</code></h3>
+<p>⚠️ <strong>Read this carefully.</strong> In the terminal there is <strong>no Recycle Bin</strong>. Deleted
+means <strong>gone forever</strong>.</p>
+<p>Delete a file:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>rm games/hello.txt
+</code></pre></div>
+<p>Delete an empty folder:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>rmdir music
+</code></pre></div>
+<p>Delete a folder and everything inside it:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>rm -r shopping_backup
+</code></pre></div>
+<p>Make <code>rm</code> ask before deleting each file (a very good habit when learning):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>rm -i books/*.txt
+</code></pre></div>
+<p>Answer <code>y</code> for yes or <code>n</code> for no.</p>
+<p><strong>Safety rules:</strong></p>
+<ol>
+<li>Always check where you are with <code>pwd</code> before deleting.</li>
+<li>Use <code>ls</code> with the same name first to see exactly what will be deleted.</li>
+<li>Never type <code>rm -rf</code> with <code>/</code> or <code>~</code> after it. It would try to delete everything.</li>
+<li>While learning, only delete things inside <code>~/playground</code>.</li>
+</ol>
+<h3>Wildcards: working with many files at once</h3>
+<p>A <strong>wildcard</strong> is a special character that matches many names:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Wildcard</th>
+<th>Matches</th>
+<th>Example</th>
+<th>Matches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>*</code></td>
+<td>anything (any number of characters)</td>
+<td><code>*.jpg</code></td>
+<td><code>cat.jpg</code>, <code>beach.jpg</code></td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td>exactly one character</td>
+<td><code>song?.mp3</code></td>
+<td><code>song1.mp3</code>, <code>song2.mp3</code></td>
+</tr>
+<tr>
+<td><code>[...]</code></td>
+<td>one of the listed characters</td>
+<td><code>song[12].mp3</code></td>
+<td><code>song1.mp3</code>, <code>song2.mp3</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Look at the messy folder:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground/messy
+ls
+ls *.jpg
+ls *.mp3
+ls s*
+ls song?.mp3
+</code></pre></div>
+<p><strong>Always try a wildcard with <code>ls</code> first</strong> before using it with <code>rm</code> or <code>mv</code>.
+This way you see what it matches.</p>
+<h3>Brace expansion: a typing shortcut</h3>
+<p>Curly braces make Bash write out several words for you:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo file{1,2,3}.txt
+echo {a..e}
+echo {1..10}
+</code></pre></div>
+<p>So this creates five folders in one go:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mkdir -p ~/playground/week/{monday,tuesday,wednesday,thursday,friday}
+ls ~/playground/week
+</code></pre></div>
+<h2>Try it</h2>
+<ol>
+<li>In <code>~/playground</code>, create a folder <code>pets</code> with an empty file <code>dog.txt</code> inside.</li>
+<li>Copy <code>dog.txt</code> to <code>cat.txt</code> in the same folder.</li>
+<li>Rename <code>cat.txt</code> to <code>kitten.txt</code>.</li>
+<li>Delete <code>kitten.txt</code> safely with <code>rm -i</code>.</li>
+<li>Delete the <code>pets</code> folder and everything left in it.</li>
+</ol>
+<h2>Exercises</h2>
+<h3>Tidy up the messy folder</h3>
+<p>The folder <code>~/playground/messy</code> has photos, music and documents all mixed up.</p>
+<ol>
+<li>Inside <code>messy</code>, create three folders: <code>photos</code>, <code>music</code> and <code>documents</code>.</li>
+<li>Move <strong>all</strong> <code>.jpg</code> and <code>.png</code> files into <code>photos</code> (two commands, or one if you're clever).</li>
+<li>Move all <code>.mp3</code> files into <code>music</code>.</li>
+<li>Move all <code>.txt</code> and <code>.csv</code> files into <code>documents</code>.</li>
+<li>Check the result with <code>ls -R</code>. Nothing should be left outside the three folders.</li>
+</ol>
+<h3>More exercises</h3>
+<ol>
+<li>In one command, create a folder <code>year</code> with the folders <code>jan</code>, <code>feb</code> and <code>mar</code> inside it.</li>
+<li>Create 10 empty files named <code>test1.txt</code> to <code>test10.txt</code> in one command.</li>
+<li>Delete all of them, but only those with <strong>one-digit</strong> numbers (<code>test1.txt</code> to <code>test9.txt</code>). Check with <code>ls</code> first!</li>
+<li>Make a backup copy of the whole <code>treasure</code> folder called <code>treasure_backup</code>.</li>
+<li>What happens if you <code>cp</code> a file to a name that already exists? Try it with two files in the playground.
+   How can you make <code>cp</code> ask first? (Hint: the same option as for <code>rm</code>.)</li>
+</ol>
+<p>When you're done, reset the playground if you like (ask your teacher).</p>
+<h2>Quiz</h2>
+<ol>
+<li>What is the difference between <code>cp</code> and <code>mv</code>?</li>
+<li>How do you rename a file?</li>
+<li>Why do you need <code>-r</code> to copy a folder?</li>
+<li>What does <code>*.txt</code> match?</li>
+<li>Where do files go when you delete them with <code>rm</code>?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mkdir name</code></td>
+<td>make a folder</td>
+</tr>
+<tr>
+<td><code>mkdir -p a/b/c</code></td>
+<td>make nested folders</td>
+</tr>
+<tr>
+<td><code>touch file</code></td>
+<td>make an empty file</td>
+</tr>
+<tr>
+<td><code>cp from to</code></td>
+<td>copy a file</td>
+</tr>
+<tr>
+<td><code>cp -r from to</code></td>
+<td>copy a folder</td>
+</tr>
+<tr>
+<td><code>mv from to</code></td>
+<td>move or rename</td>
+</tr>
+<tr>
+<td><code>rm file</code></td>
+<td>delete a file (forever!)</td>
+</tr>
+<tr>
+<td><code>rm -i file</code></td>
+<td>delete, but ask first</td>
+</tr>
+<tr>
+<td><code>rm -r folder</code></td>
+<td>delete a folder and its contents</td>
+</tr>
+<tr>
+<td><code>rmdir folder</code></td>
+<td>delete an empty folder</td>
+</tr>
+<tr>
+<td><code>*</code>, <code>?</code>, <code>[ab]</code></td>
+<td>wildcards</td>
+</tr>
+<tr>
+<td><code>{a,b,c}</code>, <code>{1..5}</code></td>
+<td>brace expansion</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Tidy up the messy folder</strong></p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground/messy
+mkdir photos music documents
+mv *.jpg *.png photos/
+mv *.mp3 music/
+mv *.txt *.csv documents/
+ls -R
+</code></pre></div>
+<p><strong>Exercises</strong></p>
+<ol>
+<li><code>mkdir -p year/{jan,feb,mar}</code></li>
+<li><code>touch test{1..10}.txt</code></li>
+<li><code>ls test?.txt</code> to check, then <code>rm test?.txt</code>. (<code>?</code> is exactly one character, so <code>test10.txt</code> is not matched.)</li>
+<li><code>cp -r treasure treasure_backup</code></li>
+<li>The old file is replaced without asking! <code>cp -i</code> asks first.</li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li><code>cp</code> makes a copy and the original stays; <code>mv</code> moves it, so the original is gone from the old place.</li>
+<li>With <code>mv old_name new_name</code>.</li>
+<li>A folder contains other files; <code>-r</code> (recursive) tells <code>cp</code> to copy everything inside.</li>
+<li>All names ending in <code>.txt</code>.</li>
+<li>Nowhere: they're gone for good. There's no Recycle Bin in the terminal.</li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-3" data-id="lesson-3"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-4" data-title="Reading and writing text" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 4 of 10</p>
+    <h1>Reading and writing text</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> cat · less · head · nano</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Show what is inside a file</li>
+<li>Read long files page by page</li>
+<li>Look at just the start or the end of a file</li>
+<li>Count lines and words</li>
+<li>Write and edit files with the <code>nano</code> editor</li>
+</ul>
+<h2>Learn</h2>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground
+</code></pre></div>
+<h3>Show a whole file: <code>cat</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cat welcome.txt
+</code></pre></div>
+<p><code>cat</code> prints the whole file to the screen. Great for short files. It can also
+show several files one after another (its name comes from "con<strong>cat</strong>enate",
+which means joining together):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cat shopping/monday.txt shopping/tuesday.txt
+</code></pre></div>
+<p>Add line numbers with <code>-n</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cat -n animals.txt
+</code></pre></div>
+<h3>Read long files: <code>less</code></h3>
+<p>For a long file, <code>cat</code> scrolls past too fast. <code>less</code> shows one screen at a time:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>less story.txt
+</code></pre></div>
+<p>Inside <code>less</code>:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Key</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><kbd>Space</kbd> or <kbd>Page Down</kbd></td>
+<td>next page</td>
+</tr>
+<tr>
+<td><code>b</code> or <kbd>Page Up</kbd></td>
+<td>previous page</td>
+</tr>
+<tr>
+<td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+<td>one line up / down</td>
+</tr>
+<tr>
+<td><code>g</code> / <code>G</code></td>
+<td>go to start / end</td>
+</tr>
+<tr>
+<td><code>/word</code> then <kbd>Enter</kbd></td>
+<td>search for "word" (<code>n</code> = next match)</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td><strong>quit</strong></td>
+</tr>
+</tbody>
+</table></div>
+<p>The most important one is <strong><code>q</code></strong> to get out!</p>
+<h3>The start or the end: <code>head</code> and <code>tail</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>head story.txt          # first 10 lines
+head -n 3 story.txt     # first 3 lines
+tail story.txt          # last 10 lines
+tail -n 5 story.txt     # last 5 lines
+</code></pre></div>
+<p><code>tail</code> is very useful for log files, where the newest lines are at the end:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>tail -n 3 logs/server.log
+</code></pre></div>
+<h3>Counting: <code>wc</code></h3>
+<p><code>wc</code> = <strong>w</strong>ord <strong>c</strong>ount. It counts lines, words and characters (bytes):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>wc story.txt
+</code></pre></div>
+<p>Output like <code>37 238 1299 story.txt</code> means 37 lines, 238 words, 1299 characters.</p>
+<p>Just one of them:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>wc -l animals.txt       # lines
+wc -w story.txt         # words
+wc -c story.txt         # characters (bytes)
+</code></pre></div>
+<h3>What kind of file is it? <code>file</code></h3>
+<p>File names don't always tell the truth. <code>file</code> looks inside:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>file story.txt
+file logs
+file /usr/bin/bash
+</code></pre></div>
+<h3>Writing files: the <code>nano</code> editor</h3>
+<p><code>nano</code> is a simple text editor that runs inside the terminal.</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>nano diary.txt
+</code></pre></div>
+<p>If the file doesn't exist, nano creates it. Now just type. Use the arrow keys to
+move around (the mouse doesn't work in nano).</p>
+<p>At the bottom you'll see commands like <code>^O Write Out</code> and <code>^X Exit</code>.
+The <code>^</code> symbol means the <strong><kbd>Ctrl</kbd></strong> key. So:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>O</kbd>, then <kbd>Enter</kbd></td>
+<td>save ("write out")</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>X</kbd></td>
+<td>exit (it asks if you want to save: press <code>Y</code> then <kbd>Enter</kbd>)</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>K</kbd></td>
+<td>cut a whole line</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>U</kbd></td>
+<td>paste the cut line</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>W</kbd></td>
+<td>search</td>
+</tr>
+<tr>
+<td><kbd>Ctrl</kbd> + <kbd>G</kbd></td>
+<td>help</td>
+</tr>
+</tbody>
+</table></div>
+<p>Write a few lines, save, exit, then check:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cat diary.txt
+</code></pre></div>
+<h3>A quick way to write one line: <code>echo</code> with <code>&gt;</code></h3>
+<p>You'll learn this properly in Lesson 7, but here's a sneak peek:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo &quot;Today I learned nano&quot; &gt; note.txt
+cat note.txt
+</code></pre></div>
+<p>The <code>&gt;</code> sends the output of <code>echo</code> into a file instead of the screen.</p>
+<h2>Try it</h2>
+<ol>
+<li>Show <code>numbers.txt</code> with line numbers.</li>
+<li>Open <code>story.txt</code> in <code>less</code>, search for the word <code>Friday</code>, then quit.</li>
+<li>Show the first 5 lines of <code>animals.txt</code>.</li>
+<li>How many lines does <code>logs/server.log</code> have?</li>
+<li>Use <code>nano</code> to create <code>hello.txt</code> containing your name and your favourite food.</li>
+</ol>
+<h2>Exercises</h2>
+<ol>
+<li>Show the last line of <code>story.txt</code>.</li>
+<li>How many words are in <code>welcome.txt</code>?</li>
+<li>Show lines 1–2 of <strong>both</strong> shopping lists with one command. (Hint: <code>head</code> accepts several files.)</li>
+<li>Open <code>animals.txt</code> in <code>nano</code>, add three new animals at the end, save, and check with <code>cat</code>.
+   How many lines does it have now?</li>
+<li>Show the first line of <code>scores.csv</code>. What do you think it is for?</li>
+<li><strong>Challenge:</strong> show <strong>only line 6</strong> of <code>story.txt</code>. (Hint: combine the idea of <code>head</code> and <code>tail</code>. You'll learn
+   the "proper" way to join commands in Lesson 7, but you can already do it in two steps by saving into a file.)</li>
+<li>Run <code>file</code> on every item in the playground at once using a wildcard.</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>How do you quit <code>less</code>?</li>
+<li>Which command shows the last 10 lines of a file?</li>
+<li>In nano, what does <code>^X</code> mean?</li>
+<li>What does <code>wc -l</code> count?</li>
+<li>Why is <code>less</code> better than <code>cat</code> for long files?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cat file</code></td>
+<td>show the whole file</td>
+</tr>
+<tr>
+<td><code>cat -n file</code></td>
+<td>show it with line numbers</td>
+</tr>
+<tr>
+<td><code>less file</code></td>
+<td>read page by page (<code>q</code> to quit)</td>
+</tr>
+<tr>
+<td><code>head -n N file</code></td>
+<td>first N lines</td>
+</tr>
+<tr>
+<td><code>tail -n N file</code></td>
+<td>last N lines</td>
+</tr>
+<tr>
+<td><code>wc -l</code> / <code>-w</code> / <code>-c</code></td>
+<td>count lines / words / characters</td>
+</tr>
+<tr>
+<td><code>file name</code></td>
+<td>what kind of file is it</td>
+</tr>
+<tr>
+<td><code>nano file</code></td>
+<td>edit a file (<kbd>Ctrl</kbd>+<kbd>O</kbd> save, <kbd>Ctrl</kbd>+<kbd>X</kbd> exit)</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Exercises</strong></p>
+<ol>
+<li><code>tail -n 1 story.txt</code> → <code>THE END</code></li>
+<li><code>wc -w welcome.txt</code> → 46 words</li>
+<li><code>head -n 2 shopping/monday.txt shopping/tuesday.txt</code></li>
+<li><code>nano animals.txt</code>, add the animals, <kbd>Ctrl</kbd>+<kbd>O</kbd>, <kbd>Enter</kbd>, <kbd>Ctrl</kbd>+<kbd>X</kbd>. <code>wc -l animals.txt</code> → 18 lines.</li>
+<li><code>head -n 1 scores.csv</code> → <code>name,game,points</code>. It's the <strong>header</strong>: it names the columns.</li>
+<li>Two steps: <code>head -n 6 story.txt &gt; part.txt</code> then <code>tail -n 1 part.txt</code>.
+   Answer: <code>Bit could sweep the floor, carry boxes and make tea,</code>
+   (After Lesson 7 you can do it in one: <code>head -n 6 story.txt | tail -n 1</code>.)</li>
+<li><code>file *</code></li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li><code>q</code></li>
+<li><code>tail</code></li>
+<li><kbd>Ctrl</kbd> + <kbd>X</kbd>: exit.</li>
+<li>Lines.</li>
+<li><code>less</code> shows one page at a time and lets you scroll and search; <code>cat</code> dumps it all at once.</li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-4" data-id="lesson-4"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-5" data-title="Getting help" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 5 of 10</p>
+    <h1>Getting help</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> man · --help · apropos</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Find out what a command does and what options it has</li>
+<li>Read manual pages</li>
+<li>Understand common error messages</li>
+<li>Know how to get unstuck</li>
+</ul>
+<p>Nobody remembers every command and every option, not even experts. Experts are
+just very good at <strong>looking things up</strong>. That's what this lesson teaches.</p>
+<h2>Learn</h2>
+<h3>Quick help: <code>--help</code></h3>
+<p>Most commands print a short help text when you add <code>--help</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls --help
+</code></pre></div>
+<p>It's long. Look at the top part first (it tells you how to use the command), then
+scan for the option you need. You can read it page by page by sending it into <code>less</code>
+(the <code>|</code> symbol is explained in Lesson 7):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls --help | less
+</code></pre></div>
+<h3>The manual: <code>man</code></h3>
+<p>Almost every command has a <strong>manual page</strong>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>man ls
+</code></pre></div>
+<p>It opens in the same viewer as <code>less</code>, so the same keys work: <kbd>Space</kbd> for the next
+page, <code>/word</code> to search, <strong><code>q</code> to quit</strong>.</p>
+<p>A manual page has sections:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Section</th>
+<th>What it tells you</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NAME</td>
+<td>the command and one line about it</td>
+</tr>
+<tr>
+<td>SYNOPSIS</td>
+<td>how to type it; things in <code>[ ]</code> are optional</td>
+</tr>
+<tr>
+<td>DESCRIPTION</td>
+<td>what it does, and all the options</td>
+</tr>
+<tr>
+<td>EXAMPLES</td>
+<td>(in some pages) examples, often the most useful part!</td>
+</tr>
+<tr>
+<td>SEE ALSO</td>
+<td>related commands</td>
+</tr>
+</tbody>
+</table></div>
+<p>There's even a manual about the manual:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>man man
+</code></pre></div>
+<h3>Search the manuals: <code>apropos</code></h3>
+<p>Don't know the name of the command? Search the one-line descriptions:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>apropos &quot;list directory&quot;
+apropos &quot;copy files&quot;
+</code></pre></div>
+<h3>What is this command? <code>type</code> and <code>which</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>type ls
+type cd
+type echo
+which python3
+</code></pre></div>
+<ul>
+<li><code>type</code> tells you what kind of thing a command is. <code>cd</code> is a <strong>shell builtin</strong>:
+  it's part of Bash itself, not a separate program.</li>
+<li><code>which</code> tells you where the program file lives.</li>
+</ul>
+<p>For builtins, use <code>help</code> instead of <code>man</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>help cd
+</code></pre></div>
+<h3>One-line descriptions: <code>whatis</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>whatis cp mv rm
+</code></pre></div>
+<h3>Reading error messages</h3>
+<p>Errors are the computer telling you what went wrong. Read them carefully: the
+answer is usually right there.</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Error</th>
+<th>What it means</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>command not found</code></td>
+<td>no command with that name</td>
+<td>check spelling; maybe it isn't installed (Lesson 8)</td>
+</tr>
+<tr>
+<td><code>No such file or directory</code></td>
+<td>the file or folder doesn't exist <strong>here</strong></td>
+<td>check spelling, check where you are with <code>pwd</code>, use <kbd>Tab</kbd></td>
+</tr>
+<tr>
+<td><code>Permission denied</code></td>
+<td>you're not allowed to do that</td>
+<td>see Lesson 8</td>
+</tr>
+<tr>
+<td><code>Is a directory</code></td>
+<td>you used a folder where a file was expected</td>
+<td>maybe you need <code>-r</code>, or the wrong name</td>
+</tr>
+<tr>
+<td><code>Not a directory</code></td>
+<td>you used a file where a folder was expected</td>
+<td>check the path</td>
+</tr>
+<tr>
+<td><code>invalid option</code></td>
+<td>that option doesn't exist for this command</td>
+<td>check <code>--help</code></td>
+</tr>
+<tr>
+<td><code>missing operand</code></td>
+<td>you forgot to say <em>what</em> to do it to</td>
+<td>add the file or folder name</td>
+</tr>
+</tbody>
+</table></div>
+<p>Let's make some errors on purpose:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground
+cat stroy.txt
+cd welcome.txt
+rmdir treasure
+ls -z
+cp story.txt
+</code></pre></div>
+<p>For each one, read the message and explain in your own words what went wrong.</p>
+<h3>Stuck? A checklist</h3>
+<ol>
+<li><strong>Nothing happens and you can't type?</strong> A command is still running or waiting. Press <kbd>Ctrl</kbd> + <kbd>C</kbd>.</li>
+<li><strong>A <code>&gt;</code> appeared at the start of the line?</strong> Bash thinks you haven't finished, often
+   because of a missing closing quote <code>"</code>. Press <kbd>Ctrl</kbd> + <kbd>C</kbd>.</li>
+<li><strong>Stuck inside a screen with text?</strong> Try <code>q</code> (for <code>less</code>/<code>man</code>) or <kbd>Ctrl</kbd> + <kbd>X</kbd> (for <code>nano</code>).</li>
+<li><strong>The terminal shows strange characters?</strong> Type <code>reset</code> and press <kbd>Enter</kbd>.</li>
+<li><strong>Still stuck?</strong> Close the terminal window and open a new one. Nothing is lost.</li>
+</ol>
+<h3>Searching the internet</h3>
+<p>When you search online, include the word <code>bash</code> or <code>linux</code> and the exact error
+message, e.g. <code>bash "No such file or directory" cd</code>. Be careful: <strong>never paste a
+command from the internet that you do not understand</strong>, especially if it contains
+<code>sudo</code> or <code>rm</code>. Ask a grown-up or your teacher first.</p>
+<h2>Try it</h2>
+<ol>
+<li>Open the manual for <code>cp</code>. Find the option that makes <code>cp</code> ask before overwriting. Quit.</li>
+<li>Use <code>apropos</code> to find a command that has something to do with <code>password</code>.</li>
+<li>Find out whether <code>pwd</code> is a builtin or a separate program.</li>
+<li>Make an unfinished quote on purpose: type <code>echo "hello</code> and press <kbd>Enter</kbd>. What do you see? Get out of it.</li>
+</ol>
+<h2>Exercises</h2>
+<ol>
+<li>Use <code>man ls</code> to find out what <code>ls -t</code> does. Try it in the playground.</li>
+<li>Use <code>ls --help</code> to find the option that sorts files by <strong>size</strong>. Use it.</li>
+<li>What does the <code>-S</code> option of <code>head</code> do... does it exist? How did you find out?</li>
+<li>What does <code>wc -L</code> do? Find it in the manual and try it on <code>story.txt</code>.</li>
+<li>Find out what the command <code>tac</code> does without running it first. Then run it on <code>numbers.txt</code>. Why is it called <code>tac</code>?</li>
+<li>Use <code>help</code> to find out what <code>cd -P</code> does. (You don't need to understand the whole answer!)</li>
+<li>Make each of these errors happen on purpose, then fix the command:
+   <code>No such file or directory</code>, <code>Is a directory</code>, <code>missing operand</code>.</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>How do you quit a manual page?</li>
+<li>Which command do you use when you know <em>what</em> you want to do but not the name of the command?</li>
+<li>What does <code>No such file or directory</code> mean?</li>
+<li>What should you do if you see <code>&gt;</code> instead of your normal prompt?</li>
+<li>Why should you be careful about copying commands from the internet?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>command --help</code></td>
+<td>short help</td>
+</tr>
+<tr>
+<td><code>man command</code></td>
+<td>full manual (<code>q</code> to quit)</td>
+</tr>
+<tr>
+<td><code>help builtin</code></td>
+<td>help for Bash builtins like <code>cd</code></td>
+</tr>
+<tr>
+<td><code>apropos word</code></td>
+<td>search manual descriptions</td>
+</tr>
+<tr>
+<td><code>whatis command</code></td>
+<td>one-line description</td>
+</tr>
+<tr>
+<td><code>type command</code></td>
+<td>what kind of command it is</td>
+</tr>
+<tr>
+<td><code>which command</code></td>
+<td>where the program file is</td>
+</tr>
+<tr>
+<td><code>reset</code></td>
+<td>fix a confused terminal</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Exercises</strong></p>
+<ol>
+<li><code>-t</code> sorts by modification time, newest first. <code>ls -lt ~/playground</code></li>
+<li><code>ls -S</code> sorts by size, biggest first. <code>ls -lS ~/playground</code></li>
+<li>It doesn't exist: <code>head -S story.txt</code> prints <code>head: invalid option -- 'S'</code>. You can also check <code>head --help</code>.</li>
+<li><code>wc -L</code> prints the length of the longest line. For <code>story.txt</code> it's 64.</li>
+<li><code>whatis tac</code> or <code>man tac</code>: it prints a file with the lines in reverse order. It's <code>cat</code> backwards!</li>
+<li><code>help cd</code>: <code>-P</code> means "use the physical directory structure without following symbolic links".
+   (Symbolic links are shortcuts to other files or folders.)</li>
+<li>For example:
+   - <code>cat nothere.txt</code> → <code>No such file or directory</code>. Fix: use a file that exists.
+   - <code>cat logs</code> → <code>Is a directory</code>. Fix: <code>cat logs/server.log</code>.
+   - <code>cp story.txt</code> → <code>missing destination file operand</code>. Fix: <code>cp story.txt story2.txt</code>.</li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li><code>q</code></li>
+<li><code>apropos</code></li>
+<li>The file or folder doesn't exist where you said: spelling mistake, or you're in a different folder.</li>
+<li>Press <kbd>Ctrl</kbd> + <kbd>C</kbd> (you probably forgot to close a quote).</li>
+<li>A command you don't understand could delete your files or damage the system, especially with <code>sudo</code> or <code>rm</code>.</li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-5" data-id="lesson-5"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-6" data-title="Searching" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 6 of 10</p>
+    <h1>Searching</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> grep · find</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Find words and lines inside files with <code>grep</code></li>
+<li>Find files and folders by name, type or size with <code>find</code></li>
+</ul>
+<h2>Learn</h2>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground
+</code></pre></div>
+<h3>Searching inside files: <code>grep</code></h3>
+<p><code>grep</code> prints every <strong>line</strong> that contains the word you're looking for:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>grep cat animals.txt
+grep Bit story.txt
+grep ERROR logs/server.log
+</code></pre></div>
+<p>The general form is:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>grep  [options]  what_to_find  where_to_look
+</code></pre></div>
+<p>Useful options:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>What it does</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-i</code></td>
+<td>ignore upper/lowercase</td>
+<td><code>grep -i the story.txt</code></td>
+</tr>
+<tr>
+<td><code>-c</code></td>
+<td>only <strong>count</strong> matching lines</td>
+<td><code>grep -c ERROR logs/server.log</code></td>
+</tr>
+<tr>
+<td><code>-n</code></td>
+<td>show line numbers</td>
+<td><code>grep -n tea story.txt</code></td>
+</tr>
+<tr>
+<td><code>-v</code></td>
+<td>show lines that do <strong>not</strong> match</td>
+<td><code>grep -v INFO logs/server.log</code></td>
+</tr>
+<tr>
+<td><code>-w</code></td>
+<td>whole words only</td>
+<td><code>grep -w cat animals.txt</code></td>
+</tr>
+<tr>
+<td><code>-r</code></td>
+<td>search all files in a folder and its subfolders</td>
+<td><code>grep -r clue treasure</code></td>
+</tr>
+<tr>
+<td><code>-l</code></td>
+<td>only show the <strong>names</strong> of files that match</td>
+<td><code>grep -rl clue treasure</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>If what you're searching for has spaces, put it in quotes:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>grep &quot;logged in&quot; logs/server.log
+</code></pre></div>
+<p>Try the difference between these two:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>grep the story.txt
+grep -w the story.txt
+</code></pre></div>
+<p>The first one also matches <code>there</code>, <code>then</code> and <code>other</code>.</p>
+<h3>Patterns (a tiny taste)</h3>
+<p><code>grep</code> understands special characters for patterns. Two very useful ones:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Means</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>^</code></td>
+<td>start of the line</td>
+<td><code>grep "^On" story.txt</code></td>
+</tr>
+<tr>
+<td><code>$</code></td>
+<td>end of the line</td>
+<td><code>grep "tea,$" story.txt</code></td>
+</tr>
+</tbody>
+</table></div>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>grep &quot;^c&quot; animals.txt      # animals starting with c
+grep &quot;a$&quot; animals.txt      # animals ending with a
+</code></pre></div>
+<p>Put patterns in quotes so Bash doesn't try to understand the special characters itself.</p>
+<h3>Finding files: <code>find</code></h3>
+<p><code>grep</code> searches <strong>inside</strong> files. <code>find</code> searches for the <strong>files themselves</strong>.</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>find  where_to_look  what_to_look_for
+</code></pre></div>
+<p>Find by name:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>find . -name &quot;clue.txt&quot;
+find . -name &quot;*.jpg&quot;
+</code></pre></div>
+<p>(Remember <code>.</code> means "this folder". <code>find</code> also looks in all folders inside it.)</p>
+<p>Ignore upper/lowercase with <code>-iname</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>find . -iname &quot;*.TXT&quot;
+</code></pre></div>
+<p>Only folders, or only files:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>find . -type d          # d = directory
+find . -type f          # f = file
+find treasure -type d
+</code></pre></div>
+<p>Find by size, or by how recently they changed:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>find . -size +1k              # bigger than 1 kilobyte
+find . -empty                 # empty files and folders
+find . -mmin -60              # changed in the last 60 minutes
+</code></pre></div>
+<p>Mix conditions; they must all be true:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>find . -type f -name &quot;*.txt&quot;
+</code></pre></div>
+<p>Hidden files are found too, so <code>find</code> is a great way to cheat in a treasure hunt:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>find treasure -name &quot;treasure.txt&quot;
+</code></pre></div>
+<h3>Errors while searching the whole computer</h3>
+<p>If you search from <code>/</code>, you'll see lots of <code>Permission denied</code> errors for folders
+you're not allowed to look in. Hide error messages by adding <code>2&gt;/dev/null</code>
+(explained in Lesson 7):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>find / -name &quot;bash&quot; 2&gt;/dev/null
+</code></pre></div>
+<h2>Try it</h2>
+<ol>
+<li>Show all lines in <code>animals.txt</code> that contain <code>dog</code>.</li>
+<li>Count how many times <code>ERROR</code> appears in the log.</li>
+<li>Find all <code>.mp3</code> files in the playground.</li>
+<li>List all folders inside <code>treasure</code>, including hidden ones.</li>
+</ol>
+<h2>Exercises</h2>
+<p>Use <code>~/playground</code> for all of these.</p>
+<ol>
+<li>How many lines in <code>logs/server.log</code> are <code>WARNING</code>s?</li>
+<li>Show all log lines that are <strong>not</strong> <code>INFO</code>, with line numbers.</li>
+<li>Which users logged in? Show only those lines.</li>
+<li>On which line numbers of <code>story.txt</code> does the word <code>tea</code> appear?</li>
+<li>Show all lines of <code>story.txt</code> that start with <code>On</code>. How many are there?</li>
+<li>Which animals in <code>animals.txt</code> contain the letter <code>o</code>?</li>
+<li>Find every file named <code>clue.txt</code> in the treasure hunt.</li>
+<li>Use one <code>grep</code> command to find which file in <code>treasure</code> contains the secret word.
+   (Hint: the secret is in a line containing <code>secret</code>.)</li>
+<li>Find all empty files in the playground. Why are they empty?</li>
+<li>Find all files in your <strong>whole home folder</strong> that end in <code>.txt</code>. How many are there?
+    (You'll learn to count them easily in Lesson 7. For now, just look.)</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>What is the difference between <code>grep</code> and <code>find</code>?</li>
+<li>Which option makes <code>grep</code> ignore uppercase and lowercase?</li>
+<li>What does <code>grep -v</code> do?</li>
+<li>What does <code>-type d</code> mean in <code>find</code>?</li>
+<li>What does <code>^</code> mean in a <code>grep</code> pattern?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>grep word file</code></td>
+<td>show lines containing word</td>
+</tr>
+<tr>
+<td><code>grep -i</code> / <code>-c</code> / <code>-n</code> / <code>-v</code> / <code>-w</code></td>
+<td>ignore case / count / line numbers / invert / whole words</td>
+</tr>
+<tr>
+<td><code>grep -r word folder</code></td>
+<td>search inside every file in a folder</td>
+</tr>
+<tr>
+<td><code>grep "^x"</code> / <code>"x$"</code></td>
+<td>lines starting / ending with x</td>
+</tr>
+<tr>
+<td><code>find . -name "*.txt"</code></td>
+<td>find files by name</td>
+</tr>
+<tr>
+<td><code>find . -type f</code> / <code>-type d</code></td>
+<td>only files / only folders</td>
+</tr>
+<tr>
+<td><code>find . -size +1k</code></td>
+<td>bigger than 1 KB</td>
+</tr>
+<tr>
+<td><code>find . -empty</code></td>
+<td>empty files and folders</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Exercises</strong></p>
+<ol>
+<li><code>grep -c WARNING logs/server.log</code> → 10</li>
+<li><code>grep -vn INFO logs/server.log</code> (15 lines)</li>
+<li><code>grep "logged in" logs/server.log</code> (15 lines; users ala, bartek and celina)</li>
+<li><code>grep -n tea story.txt</code> → lines 6 and 31</li>
+<li><code>grep "^On" story.txt</code> → 8 lines</li>
+<li><code>grep o animals.txt</code> → dog, koala, lion, octopus (dog appears 3 times)</li>
+<li><code>find treasure -name clue.txt</code> (4 files)</li>
+<li><code>grep -r secret treasure</code> → <code>treasure/mountain/cave/.hidden_chest/treasure.txt: The secret word is: PENGUIN</code></li>
+<li><code>find . -empty</code> → the 13 files in <code>messy</code>. They were made with <code>touch</code>, so nothing was ever written in them.</li>
+<li><code>find ~ -name "*.txt"</code>. The number depends on the computer.</li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li><code>grep</code> searches for text <strong>inside</strong> files; <code>find</code> searches for <strong>files</strong> by name, type, size...</li>
+<li><code>-i</code></li>
+<li>Shows lines that do <strong>not</strong> match.</li>
+<li>Only directories (folders).</li>
+<li>The start of the line.</li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-6" data-id="lesson-6"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-7" data-title="Pipes and redirection" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 7 of 10</p>
+    <h1>Pipes and redirection</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> &gt; · | · sort · uniq</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Save the output of a command into a file</li>
+<li>Feed the output of one command into another with a pipe <code>|</code></li>
+<li>Sort, remove duplicates, and cut columns</li>
+<li>Build your own "command chains" to answer questions</li>
+</ul>
+<p>This is where the terminal becomes really powerful. Each command does one small
+job well. Pipes let you <strong>snap them together like LEGO bricks</strong>.</p>
+<h2>Learn</h2>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground
+</code></pre></div>
+<h3>Saving output to a file: <code>&gt;</code></h3>
+<p>Normally a command prints its output to the screen. <code>&gt;</code> sends it into a file
+instead:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls &gt; list.txt
+cat list.txt
+</code></pre></div>
+<p>⚠️ <code>&gt;</code> <strong>replaces</strong> the whole file if it already exists:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo &quot;first&quot; &gt; test.txt
+echo &quot;second&quot; &gt; test.txt
+cat test.txt              # only &quot;second&quot;
+</code></pre></div>
+<h3>Adding to the end of a file: <code>&gt;&gt;</code></h3>
+<p><code>&gt;&gt;</code> <strong>appends</strong>: it adds to the end and keeps what was already there:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo &quot;first&quot; &gt; test.txt
+echo &quot;second&quot; &gt;&gt; test.txt
+echo &quot;third&quot; &gt;&gt; test.txt
+cat test.txt
+</code></pre></div>
+<p>A handy diary trick:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>date &gt;&gt; diary.txt
+echo &quot;Learned about pipes today&quot; &gt;&gt; diary.txt
+</code></pre></div>
+<h3>Errors are separate: <code>2&gt;</code></h3>
+<p>Normal output and error messages travel on two different "channels". <code>&gt;</code> only
+redirects normal output. To redirect errors use <code>2&gt;</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls story.txt nothere.txt &gt; out.txt 2&gt; errors.txt
+cat out.txt
+cat errors.txt
+</code></pre></div>
+<p><code>/dev/null</code> is a special file that throws away everything sent to it, like a black hole:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls nothere.txt 2&gt;/dev/null
+</code></pre></div>
+<h3>Pipes: <code>|</code></h3>
+<p>The <strong>pipe</strong> <code>|</code> (<kbd>Shift</kbd> + <kbd>\</kbd> on most keyboards) sends the output of the
+command on the left into the command on the right:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls | wc -l
+</code></pre></div>
+<p><code>ls</code> lists the files; instead of going to the screen, the list goes into <code>wc -l</code>,
+which counts the lines. So this counts the files in the folder!</p>
+<p>More examples:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>grep ERROR logs/server.log | wc -l          # how many errors?
+cat story.txt | head -n 3                   # (same as head -n 3 story.txt)
+ls -l /usr/bin | less                       # scroll through a long list
+history | grep cd                           # which cd commands have I typed?
+</code></pre></div>
+<p>You can join as many commands as you like:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>grep &quot;logged in&quot; logs/server.log | grep ala | wc -l
+</code></pre></div>
+<h3>Sorting: <code>sort</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sort animals.txt              # A to Z
+sort -r animals.txt           # Z to A (reverse)
+sort numbers.txt              # careful! sorts as text: 100 comes before 15
+sort -n numbers.txt           # sorts as numbers
+sort -nr numbers.txt          # biggest first
+</code></pre></div>
+<h3>Removing duplicates: <code>uniq</code></h3>
+<p><code>uniq</code> removes repeated lines, but <strong>only if they are next to each other</strong>. That's
+why you almost always <code>sort</code> first:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sort animals.txt | uniq
+sort animals.txt | uniq -c          # count how many of each
+sort animals.txt | uniq -c | sort -nr    # most common first
+sort animals.txt | uniq -d          # only the ones that are duplicated
+</code></pre></div>
+<h3>Cutting columns: <code>cut</code></h3>
+<p><code>scores.csv</code> is a table. Each line has columns separated by commas:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cat scores.csv
+</code></pre></div>
+<p><code>cut</code> picks out columns. <code>-d,</code> says "columns are separated by commas", <code>-f1</code>
+says "give me field (column) 1":</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cut -d, -f1 scores.csv            # names
+cut -d, -f2 scores.csv            # games
+cut -d, -f1,3 scores.csv          # names and points
+</code></pre></div>
+<p>And sort the table by its third column, as numbers:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sort -t, -k3 -n scores.csv
+</code></pre></div>
+<p>(<code>-t,</code> = columns separated by commas, <code>-k3</code> = sort by column 3.)</p>
+<h3>Skipping the header line</h3>
+<p>The first line of <code>scores.csv</code> is a header, not data. <code>tail -n +2</code> means "start from line 2":</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>tail -n +2 scores.csv
+</code></pre></div>
+<h3>Building a chain step by step</h3>
+<p>Question: <em>Which game is the most popular?</em></p>
+<p>Build the answer one brick at a time, running it after each step:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>tail -n +2 scores.csv
+tail -n +2 scores.csv | cut -d, -f2
+tail -n +2 scores.csv | cut -d, -f2 | sort
+tail -n +2 scores.csv | cut -d, -f2 | sort | uniq -c
+tail -n +2 scores.csv | cut -d, -f2 | sort | uniq -c | sort -nr
+tail -n +2 scores.csv | cut -d, -f2 | sort | uniq -c | sort -nr | head -n 1
+</code></pre></div>
+<p>This is how everybody builds long commands: add one piece, check, add the next.</p>
+<h3>See and save at the same time: <code>tee</code></h3>
+<p><code>tee</code> saves to a file <strong>and</strong> passes the text along to the screen:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sort animals.txt | uniq | tee unique_animals.txt
+</code></pre></div>
+<h3>More small tools</h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cat numbers.txt | tr '\n' ' '           # tr: replace characters (new lines with spaces)
+echo hello | tr a-z A-Z                 # lowercase to uppercase
+seq 1 10                                # print numbers 1 to 10
+seq 1 10 | paste -sd+ | bc              # add them up! (bc is a calculator)
+</code></pre></div>
+<h2>Try it</h2>
+<ol>
+<li>Save the output of <code>date</code> into <code>today.txt</code>. Then add the output of <code>whoami</code> to the same file.</li>
+<li>Count the files in <code>messy</code> with a pipe. (Reset the playground first if you tidied it in Lesson 3.)</li>
+<li>Sort <code>numbers.txt</code> from biggest to smallest.</li>
+<li>Show each animal only once, in alphabetical order.</li>
+</ol>
+<h2>Exercises</h2>
+<ol>
+<li>How many <strong>different</strong> animals are in <code>animals.txt</code>? (One chain of commands.)</li>
+<li>Which animal appears most often? (There might be a tie!)</li>
+<li>What is the biggest number in <code>numbers.txt</code>? Show only that number.</li>
+<li>Who scored the most points in <code>scores.csv</code>? Show only their name.</li>
+<li>How many people played chess?</li>
+<li>Create <code>all_shopping.txt</code> containing both shopping lists, sorted, with no duplicates.</li>
+<li>Which item is on <strong>both</strong> shopping lists?</li>
+<li>Show the 3 most recent <code>ERROR</code> or <code>WARNING</code> lines in the log.
+   (Hint: <code>grep -v INFO</code>)</li>
+<li>Count how many <code>.txt</code> files there are in your whole home folder (look back at Lesson 6, exercise 10).</li>
+<li>Make a file <code>top_words.txt</code> with the 5 most common words in <code>story.txt</code>.
+    Hints: <code>tr ' ' '\n'</code> puts each word on its own line; <code>tr -d '.,"'</code> deletes punctuation;
+    <code>tr A-Z a-z</code> makes everything lowercase; <code>grep -v "^$"</code> removes empty lines.</li>
+<li><strong>Challenge:</strong> what is the total of all the points in <code>scores.csv</code>?</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>What's the difference between <code>&gt;</code> and <code>&gt;&gt;</code>?</li>
+<li>What does <code>|</code> do?</li>
+<li>Why do we use <code>sort</code> before <code>uniq</code>?</li>
+<li>Why does <code>sort numbers.txt</code> put <code>100</code> before <code>15</code>? How do you fix it?</li>
+<li>What is <code>/dev/null</code>?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Symbol / command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cmd &gt; file</code></td>
+<td>save output to a file (replace)</td>
+</tr>
+<tr>
+<td><code>cmd &gt;&gt; file</code></td>
+<td>add output to the end of a file</td>
+</tr>
+<tr>
+<td><code>cmd 2&gt; file</code></td>
+<td>save error messages to a file</td>
+</tr>
+<tr>
+<td><code>2&gt;/dev/null</code></td>
+<td>throw away errors</td>
+</tr>
+<tr>
+<td><code>cmd1 | cmd2</code></td>
+<td>send output of cmd1 into cmd2</td>
+</tr>
+<tr>
+<td><code>sort</code> / <code>-n</code> / <code>-r</code></td>
+<td>sort / as numbers / reverse</td>
+</tr>
+<tr>
+<td><code>sort -t, -k3</code></td>
+<td>sort by column 3, comma separated</td>
+</tr>
+<tr>
+<td><code>uniq</code> / <code>-c</code> / <code>-d</code></td>
+<td>remove adjacent duplicates / count / only duplicates</td>
+</tr>
+<tr>
+<td><code>cut -d, -f2</code></td>
+<td>take column 2, comma separated</td>
+</tr>
+<tr>
+<td><code>tail -n +2</code></td>
+<td>everything from line 2 onwards</td>
+</tr>
+<tr>
+<td><code>tee file</code></td>
+<td>save and show at the same time</td>
+</tr>
+<tr>
+<td><code>tr a b</code></td>
+<td>replace characters</td>
+</tr>
+<tr>
+<td><code>seq 1 10</code></td>
+<td>count from 1 to 10</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Exercises</strong></p>
+<ol>
+<li><code>sort animals.txt | uniq | wc -l</code> → 10</li>
+<li><code>sort animals.txt | uniq -c | sort -nr | head -n 3</code> → <code>cat</code> and <code>dog</code>, 3 times each (a tie!)</li>
+<li><code>sort -n numbers.txt | tail -n 1</code> → 100</li>
+<li><code>sort -t, -k3 -n scores.csv | tail -n 1 | cut -d, -f1</code> → Franek</li>
+<li><code>grep -c chess scores.csv</code> → 4</li>
+<li><code>cat shopping/*.txt | sort | uniq &gt; all_shopping.txt</code> (or <code>sort -u shopping/*.txt &gt; all_shopping.txt</code>)</li>
+<li><code>cat shopping/*.txt | sort | uniq -d</code> → milk</li>
+<li><code>grep -v INFO logs/server.log | tail -n 3</code></li>
+<li><code>find ~ -name "*.txt" 2&gt;/dev/null | wc -l</code></li>
+<li>Result: the (20), bit (17), and (10), on (8), a (7). The command:</li>
+</ol>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cat story.txt | tr -d '.,&quot;' | tr A-Z a-z | tr ' ' '\n' | grep -v &quot;^$&quot; | sort | uniq -c | sort -nr | head -n 5 &gt; top_words.txt
+</code></pre></div>
+<ol start="11">
+<li><code>tail -n +2 scores.csv | cut -d, -f3 | paste -sd+ | bc</code> → 234</li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li><code>&gt;</code> replaces the file; <code>&gt;&gt;</code> adds to the end.</li>
+<li>Sends the output of the command on the left into the command on the right.</li>
+<li><code>uniq</code> only removes duplicates that are <strong>next to each other</strong>; sorting puts them together.</li>
+<li>It sorts as text, character by character, and <code>1</code> comes before <code>5</code>. Use <code>sort -n</code>.</li>
+<li>A special "black hole" file: everything written to it disappears.</li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-7" data-id="lesson-7"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-8" data-title="Permissions and installing programs" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 8 of 10</p>
+    <h1>Permissions and installing programs</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> chmod · sudo · apt</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Read file permissions in <code>ls -l</code></li>
+<li>Change permissions with <code>chmod</code></li>
+<li>Understand what <code>sudo</code> is and when to use it (and when not to)</li>
+<li>Install, update and remove programs with <code>apt</code></li>
+<li>See and stop running programs</li>
+</ul>
+<h2>Learn</h2>
+<h3>Who is allowed to do what?</h3>
+<p>Linux is built for many users sharing one computer. Every file has an <strong>owner</strong>
+and <strong>permissions</strong> that say who may do what with it.</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/playground
+ls -l
+</code></pre></div>
+<p>You'll see lines like:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>-rw-rw-r-- 1 mieszko mieszko  168 Mar 14 10:00 welcome.txt
+drwxrwxr-x 2 mieszko mieszko 4096 Mar 14 10:00 logs
+</code></pre></div>
+<p>The first column is the permissions. Let's take it apart:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code> -    rw-    rw-    r--
+type  user  group  others
+</code></pre></div>
+<ul>
+<li><strong>type</strong>: <code>-</code> is a file, <code>d</code> is a directory (folder)</li>
+<li>then three groups of three letters, for:</li>
+<li><strong>user</strong>: the owner of the file (you)</li>
+<li><strong>group</strong>: a group of users the file belongs to</li>
+<li><strong>others</strong>: everybody else</li>
+</ul>
+<p>Each group of three is always in the same order:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Letter</th>
+<th>Permission</th>
+<th>For a file</th>
+<th>For a folder</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>r</code></td>
+<td>read</td>
+<td>look inside the file</td>
+<td>list what's in it</td>
+</tr>
+<tr>
+<td><code>w</code></td>
+<td>write</td>
+<td>change the file</td>
+<td>add/remove files in it</td>
+</tr>
+<tr>
+<td><code>x</code></td>
+<td>execute</td>
+<td>run it as a program</td>
+<td>go into it with <code>cd</code></td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>—</td>
+<td>not allowed</td>
+<td>not allowed</td>
+</tr>
+</tbody>
+</table></div>
+<p>So <code>rw-rw-r--</code> means: the owner can read and write, the group can read and
+write, everybody else can only read. Nobody can run it as a program.</p>
+<h3>Changing permissions: <code>chmod</code></h3>
+<p><code>chmod</code> = <strong>ch</strong>ange <strong>mod</strong>e. Say <strong>who</strong> (<code>u</code> user, <code>g</code> group, <code>o</code> others,
+<code>a</code> all), <strong>add or remove</strong> (<code>+</code> or <code>-</code>), and <strong>what</strong> (<code>r</code>, <code>w</code>, <code>x</code>):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo &quot;top secret&quot; &gt; secret.txt
+ls -l secret.txt
+chmod o-r secret.txt        # others can no longer read it
+ls -l secret.txt
+chmod u-w secret.txt        # even you can't change it now
+echo &quot;change&quot; &gt; secret.txt  # Permission denied!
+chmod u+w secret.txt        # give it back
+</code></pre></div>
+<p>The most common use is making a script runnable, which you'll do in Lesson 9:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>chmod +x myscript.sh
+</code></pre></div>
+<h3>The boss of the computer: <code>root</code> and <code>sudo</code></h3>
+<p>There is one special user called <strong>root</strong> who is allowed to do <em>everything</em>:
+change any file, install programs, even delete the whole system.</p>
+<p>Your normal user can't change system files. Try:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ls -l /etc/hostname
+echo test &gt; /etc/hostname     # Permission denied. Good!
+</code></pre></div>
+<p>This protects the computer from mistakes. When you really need to do an admin job,
+you put <strong><code>sudo</code></strong> in front of the command. It means "do this as root". It asks for
+your password (nothing appears while you type it, not even stars; that's normal).</p>
+<p>⚠️ <strong>The <code>sudo</code> rule:</strong> <code>sudo</code> turns off the safety net. Only use it when you
+know exactly what the command does, and never with a command copied from the
+internet that you don't understand. While learning, only use <code>sudo</code> with your
+teacher.</p>
+<h3>Installing programs: <code>apt</code></h3>
+<p>Ubuntu gets programs from <strong>software repositories</strong>: big online collections of
+programs (called <strong>packages</strong>) that are checked and safe. <code>apt</code> is the tool to use them.</p>
+<p>First, update the list of available packages (do this before installing):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sudo apt update
+</code></pre></div>
+<p>Install some fun and useful programs:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sudo apt install tree cowsay sl ncal
+</code></pre></div>
+<p><code>apt</code> shows what it will install and asks <code>Do you want to continue? [Y/n]</code>.
+Press <kbd>Enter</kbd> (or <code>Y</code>).</p>
+<p>Try them:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>tree ~/playground/treasure
+tree -a ~/playground/treasure     # include hidden
+cowsay &quot;I can install programs!&quot;
+sl                                # what happens if you mistype ls...
+cal
+</code></pre></div>
+<p>Other <code>apt</code> commands:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>apt search weather            # search for packages (no sudo needed)
+apt show cowsay               # information about a package
+sudo apt upgrade              # update all installed programs
+sudo apt remove sl            # uninstall a program
+</code></pre></div>
+<h3>Running programs: processes</h3>
+<p>Every running program is a <strong>process</strong>. See yours:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>ps
+ps aux | less             # every process on the computer
+</code></pre></div>
+<p><code>top</code> shows processes live, like a task manager (press <code>q</code> to quit).
+A nicer version can be installed:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sudo apt install htop
+htop
+</code></pre></div>
+<p>Stop a program that's stuck:</p>
+<ol>
+<li>Find its number (the <strong>PID</strong>) with <code>ps aux | grep name</code></li>
+<li><code>kill PID</code></li>
+</ol>
+<p>Let's practise with a harmless program that just waits:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>sleep 1000 &amp;          # &amp; runs it in the background, so you can keep typing
+ps                    # find the PID of sleep
+kill 12345            # use the real PID you saw
+ps                    # it's gone
+</code></pre></div>
+<h3>How much space? <code>df</code> and <code>du</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>df -h               # free space on the disks
+du -sh ~/playground # size of a folder
+du -sh ~/*          # size of everything in your home folder
+</code></pre></div>
+<h2>Try it</h2>
+<ol>
+<li>Look at the permissions of <code>story.txt</code>. Who can read it? Who can change it?</li>
+<li>Look at the permissions of <code>/usr/bin/ls</code>. Why does it have <code>x</code>?</li>
+<li>Install <code>tree</code> (with your teacher) and draw the playground.</li>
+<li>Start <code>sleep 500 &amp;</code> and stop it with <code>kill</code>.</li>
+</ol>
+<h2>Exercises</h2>
+<ol>
+<li>Create <code>private.txt</code> and change the permissions so <strong>only you</strong> can read and write it
+   (no permissions at all for group and others). What does <code>ls -l</code> show?</li>
+<li>Remove your own read permission from <code>private.txt</code> and try to <code>cat</code> it. What happens? Give it back.</li>
+<li>Make a folder <code>locked</code> and remove your <code>x</code> permission from it. Can you <code>cd</code> into it? Can you <code>ls</code> it? Fix it.</li>
+<li>Use <code>apt search</code> to find a package that plays a game in the terminal. (Ideas: <code>ninvaders</code>, <code>moon-buggy</code>,
+   <code>bastet</code>, <code>nsnake</code>). With your teacher, install one and play it.</li>
+<li>Use <code>apt show</code> to find out what the <code>fortune-mod</code> package does. Install it and combine <code>fortune</code> with
+   <code>cowsay</code> using a pipe.</li>
+<li>Which folder in your home folder takes up the most space?</li>
+<li>How much free space is there on the main disk (the one mounted on <code>/</code>)?</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>What does <code>rwxr-xr--</code> mean?</li>
+<li>What does <code>chmod +x file</code> do?</li>
+<li>Who is <code>root</code>?</li>
+<li>Why should you be careful with <code>sudo</code>?</li>
+<li>Why do we run <code>sudo apt update</code> before installing?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ls -l</code></td>
+<td>show permissions</td>
+</tr>
+<tr>
+<td><code>chmod u+x file</code></td>
+<td>give the owner (u) execute (x) permission</td>
+</tr>
+<tr>
+<td><code>chmod o-r file</code></td>
+<td>take read permission away from others</td>
+</tr>
+<tr>
+<td><code>sudo command</code></td>
+<td>run a command as root (admin)</td>
+</tr>
+<tr>
+<td><code>sudo apt update</code></td>
+<td>refresh the list of packages</td>
+</tr>
+<tr>
+<td><code>sudo apt install pkg</code></td>
+<td>install a program</td>
+</tr>
+<tr>
+<td><code>sudo apt remove pkg</code></td>
+<td>uninstall a program</td>
+</tr>
+<tr>
+<td><code>apt search word</code></td>
+<td>search for programs</td>
+</tr>
+<tr>
+<td><code>ps</code>, <code>ps aux</code></td>
+<td>list running processes</td>
+</tr>
+<tr>
+<td><code>top</code> / <code>htop</code></td>
+<td>live process viewer (<code>q</code> to quit)</td>
+</tr>
+<tr>
+<td><code>command &amp;</code></td>
+<td>run in the background</td>
+</tr>
+<tr>
+<td><code>kill PID</code></td>
+<td>stop a process</td>
+</tr>
+<tr>
+<td><code>df -h</code> / <code>du -sh</code></td>
+<td>free disk space / size of a folder</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p><strong>Exercises</strong></p>
+<ol>
+<li><code>touch private.txt</code> then <code>chmod go-rwx private.txt</code>. <code>ls -l</code> shows <code>-rw-------</code>.</li>
+<li><code>chmod u-r private.txt</code>, <code>cat private.txt</code> → <code>Permission denied</code>. Fix: <code>chmod u+r private.txt</code>.</li>
+<li><code>mkdir locked</code>, <code>chmod u-x locked</code>. <code>cd locked</code> → <code>Permission denied</code>. <code>ls locked</code> shows the
+   names (sometimes with errors), but you can't get inside. Fix: <code>chmod u+x locked</code>.</li>
+<li><code>apt search game</code> or <code>apt search invaders</code>, then e.g. <code>sudo apt install ninvaders</code> and run <code>ninvaders</code>.</li>
+<li><code>apt show fortune-mod</code>: it prints random quotes and jokes. <code>sudo apt install fortune-mod</code>, then
+   <code>fortune | cowsay</code>. (If <code>fortune</code> isn't found right away, try <code>/usr/games/fortune | cowsay</code>.)</li>
+<li><code>du -sh ~/* | sort -h | tail -n 1</code></li>
+<li><code>df -h /</code> and look at the <code>Avail</code> column.</li>
+</ol>
+<p><strong>Quiz</strong></p>
+<ol>
+<li>The owner can read, write and execute; the group can read and execute; others can only read.</li>
+<li>Gives everybody permission to execute (run) the file.</li>
+<li>The administrator user, who is allowed to do anything.</li>
+<li>It switches off the protection: one wrong command can damage the whole system.</li>
+<li>So <code>apt</code> knows about the newest versions of the packages.</li>
+</ol></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-8" data-id="lesson-8"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-9" data-title="Your first scripts" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 9 of 10</p>
+    <h1>Your first scripts</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> #!/bin/bash · $var · read</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Write a script: a file full of commands that runs with one word</li>
+<li>Use variables to remember things</li>
+<li>Ask the user questions with <code>read</code></li>
+<li>Give a script information when you start it (arguments)</li>
+<li>Do maths in Bash</li>
+</ul>
+<h2>Learn</h2>
+<h3>What is a script?</h3>
+<p>A <strong>script</strong> is a text file containing commands. Running the script runs all the
+commands, one after another. Anything you can type in the terminal you can put
+in a script.</p>
+<p>Make a folder for your scripts:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mkdir -p ~/scripts
+cd ~/scripts
+</code></pre></div>
+<h3>Script number one</h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>nano hello.sh
+</code></pre></div>
+<p>Type this in:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# My first script
+echo &quot;Hello!&quot;
+echo &quot;Today is:&quot;
+date
+echo &quot;You are in:&quot;
+pwd
+</code></pre></div>
+<p>Save (<kbd>Ctrl</kbd>+<kbd>O</kbd>, <kbd>Enter</kbd>) and exit (<kbd>Ctrl</kbd>+<kbd>X</kbd>).</p>
+<ul>
+<li>The first line <code>#!/bin/bash</code> is called the <strong>shebang</strong>. It tells Linux "run this
+  file with Bash". It must be the very first line.</li>
+<li>Lines starting with <code>#</code> are comments, for humans.</li>
+<li><code>.sh</code> at the end of the name is just a convention so that people know it's a shell script.</li>
+</ul>
+<p>Run it:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>bash hello.sh
+</code></pre></div>
+<h3>Making it runnable</h3>
+<p>Remember permissions from Lesson 8? Give the script the <code>x</code> (execute) permission:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>chmod +x hello.sh
+./hello.sh
+</code></pre></div>
+<p>Why <code>./</code>? For safety, Bash only looks for commands in a list of special folders, not in
+the folder you're in. <code>./</code> means "the file <code>hello.sh</code> in <strong>this</strong> folder".</p>
+<h3>Variables</h3>
+<p>A <strong>variable</strong> is a named box that holds a value.</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>name=&quot;Mieszko&quot;
+echo &quot;Hello, $name&quot;
+</code></pre></div>
+<p>Rules:</p>
+<ul>
+<li><strong>No spaces</strong> around <code>=</code>. <code>name = "Mieszko"</code> does <strong>not</strong> work.</li>
+<li>To <strong>use</strong> the value, put <code>$</code> in front: <code>$name</code>.</li>
+<li>Use <strong>double quotes</strong> <code>"..."</code> around text with variables. Single quotes <code>'...'</code>
+  show the text exactly as typed, without replacing variables:</li>
+</ul>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo &quot;Hello, $name&quot;     # Hello, Mieszko
+echo 'Hello, $name'     # Hello, $name
+</code></pre></div>
+<p>When a variable is directly followed by letters, wrap its name in <code>{ }</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>animal=&quot;cat&quot;
+echo &quot;I have two ${animal}s&quot;
+</code></pre></div>
+<p>Linux has some variables already set for you:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo $HOME
+echo $USER
+echo $PWD
+echo $RANDOM      # a random number each time!
+</code></pre></div>
+<h3>Saving the output of a command: <code>$( )</code></h3>
+<p><code>$( command )</code> runs the command and puts its output in that spot:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>today=$(date +%A)
+echo &quot;Today is $today&quot;
+
+count=$(ls ~/playground | wc -l)
+echo &quot;The playground has $count items&quot;
+</code></pre></div>
+<h3>Asking questions: <code>read</code></h3>
+<p><code>read</code> waits for the user to type something and stores it in a variable.
+<code>-p</code> shows a question first:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+read -p &quot;What is your name? &quot; name
+read -p &quot;What is your favourite animal? &quot; animal
+echo &quot;Hi $name! I like ${animal}s too.&quot;
+</code></pre></div>
+<p>Save this as <code>ask.sh</code>, make it runnable, and run it.</p>
+<h3>Maths: <code>$(( ))</code></h3>
+<p>Bash can do maths with <strong>whole numbers</strong> inside <code>$(( ))</code>:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>echo $(( 2 + 3 ))
+echo $(( 10 - 4 ))
+echo $(( 6 * 7 ))
+echo $(( 20 / 3 ))      # 6, whole numbers only
+echo $(( 20 % 3 ))      # 2, the remainder
+echo $(( 2 ** 10 ))     # 1024, power
+
+a=5
+b=8
+echo &quot;$a + $b = $(( a + b ))&quot;
+</code></pre></div>
+<p>Inside <code>$(( ))</code> you don't need <code>$</code> before variable names.</p>
+<h3>Arguments: information given at the start</h3>
+<p>You can give a script information on the same line you run it:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>./greet.sh Mieszko pizza
+</code></pre></div>
+<p>Inside the script, the first word is <code>$1</code>, the second is <code>$2</code>, and so on.
+<code>$#</code> is how many there are, and <code>$0</code> is the script's own name:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# greet.sh - greet someone and mention their favourite food
+echo &quot;Hello, $1!&quot;
+echo &quot;I heard you like $2.&quot;
+echo &quot;(You gave me $# arguments.)&quot;
+</code></pre></div>
+<h3>Where to keep scripts so they run from anywhere</h3>
+<p>If you create a folder called <code>bin</code> in your home folder, Ubuntu adds it to the
+list of places where Bash looks for commands (you need to log out and in again
+the first time):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>mkdir -p ~/bin
+cp ~/scripts/hello.sh ~/bin/hello
+</code></pre></div>
+<p>After logging out and in, you can just type <code>hello</code> from any folder.</p>
+<h2>Try it</h2>
+<ol>
+<li>Write <code>hello.sh</code>, make it runnable and run it with <code>./hello.sh</code>.</li>
+<li>Store your favourite colour in a variable and print a sentence using it.</li>
+<li>Print a random number with <code>$RANDOM</code>. Run it a few times.</li>
+<li>Calculate how many seconds there are in a day using <code>$(( ))</code>.</li>
+</ol>
+<h2>Exercises</h2>
+<p>Write each script in <code>~/scripts</code>, make it runnable, and test it.</p>
+<ol>
+<li><strong><code>about_me.sh</code></strong>: prints your name, the date, the computer's name and how long it has been
+   switched on. Use <code>whoami</code>, <code>date</code>, <code>hostname</code> and <code>uptime -p</code>.</li>
+<li><strong><code>age.sh</code></strong>: asks for your name and the year you were born, then prints
+   <code>Hi NAME, you are about AGE years old.</code> (Use <code>$(date +%Y)</code> for the current year.)</li>
+<li><strong><code>calc.sh</code></strong>: takes two numbers as arguments and prints their sum, difference, product, quotient and
+   remainder. Example: <code>./calc.sh 17 5</code>.</li>
+<li><strong><code>backup.sh</code></strong>: copies the folder <code>~/playground/shopping</code> into a new folder whose name includes today's
+   date, like <code>shopping_2026-03-14</code>. (Hint: <code>date +%F</code>.)</li>
+<li><strong><code>dice.sh</code></strong>: prints a random number from 1 to 6. (Hint: <code>$RANDOM % 6</code> gives 0 to 5.)</li>
+<li><strong><code>report.sh</code></strong>: prints how many lines, <code>ERROR</code>s and <code>WARNING</code>s are in <code>~/playground/logs/server.log</code>.</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>What is the first line of a Bash script called, and what does it do?</li>
+<li>What's wrong with <code>name = Bob</code>?</li>
+<li>What's the difference between <code>echo "$name"</code> and <code>echo '$name'</code>?</li>
+<li>How do you run a script called <code>game.sh</code> that's in the folder you're in?</li>
+<li>In <code>./greet.sh Ala cake</code>, what are <code>$1</code>, <code>$2</code> and <code>$#</code>?</li>
+</ol>
+<h2>Recap</h2>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Thing</th>
+<th>Example</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>shebang</td>
+<td><code>#!/bin/bash</code></td>
+<td>first line: run this with Bash</td>
+</tr>
+<tr>
+<td>comment</td>
+<td><code># note</code></td>
+<td>ignored by Bash</td>
+</tr>
+<tr>
+<td>make runnable</td>
+<td><code>chmod +x s.sh</code></td>
+<td>allow running the script</td>
+</tr>
+<tr>
+<td>run</td>
+<td><code>./s.sh</code></td>
+<td>run a script in this folder</td>
+</tr>
+<tr>
+<td>variable</td>
+<td><code>x="hi"</code> / <code>$x</code></td>
+<td>store / use a value</td>
+</tr>
+<tr>
+<td>command output</td>
+<td><code>$(date)</code></td>
+<td>put a command's output here</td>
+</tr>
+<tr>
+<td>maths</td>
+<td><code>$(( 3 * 4 ))</code></td>
+<td>whole number calculations</td>
+</tr>
+<tr>
+<td>ask</td>
+<td><code>read -p "Q? " ans</code></td>
+<td>ask the user and store the answer</td>
+</tr>
+<tr>
+<td>arguments</td>
+<td><code>$1</code>, <code>$2</code>, <code>$#</code></td>
+<td>words given when the script is run</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><div class="table"><table>
+<thead>
+<tr>
+<th>Exercise</th>
+<th>Script</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>about_me.sh</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>age.sh</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>calc.sh</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>backup.sh</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>dice.sh</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>report.sh</code>: 50 lines, 5 errors, 10 warnings</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Quiz</strong></p>
+<ol>
+<li>The <strong>shebang</strong> (<code>#!/bin/bash</code>). It tells Linux which program should run the script.</li>
+<li>There must be no spaces around <code>=</code>: <code>name=Bob</code>.</li>
+<li>Double quotes replace <code>$name</code> with its value; single quotes print <code>$name</code> literally.</li>
+<li><code>./game.sh</code> (after <code>chmod +x game.sh</code>), or <code>bash game.sh</code>.</li>
+<li><code>$1</code> = <code>Ala</code>, <code>$2</code> = <code>cake</code>, <code>$#</code> = <code>2</code>.</li>
+</ol><h4>about_me.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 9, exercise 1: a few facts about me and this computer
+echo &quot;My name is: $(whoami)&quot;
+echo &quot;Today is: $(date)&quot;
+echo &quot;This computer is called: $(hostname)&quot;
+echo &quot;It has been switched on for: $(uptime -p)&quot;
+</code></pre></div><h4>age.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 9, exercise 2: work out someone's age
+read -p &quot;What is your name? &quot; name
+read -p &quot;Which year were you born? &quot; born
+year=$(date +%Y)
+age=$(( year - born ))
+echo &quot;Hi $name, you are about $age years old.&quot;
+</code></pre></div><h4>calc.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 9, exercise 3: a tiny calculator
+# Usage: ./calc.sh 17 5
+a=$1
+b=$2
+echo &quot;$a + $b = $(( a + b ))&quot;
+echo &quot;$a - $b = $(( a - b ))&quot;
+echo &quot;$a * $b = $(( a * b ))&quot;
+echo &quot;$a / $b = $(( a / b ))&quot;
+echo &quot;$a % $b = $(( a % b ))  (the remainder)&quot;
+</code></pre></div><h4>backup.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 9, exercise 4: copy the shopping lists into a folder named with today's date
+today=$(date +%F)
+cp -r ~/playground/shopping ~/playground/shopping_$today
+echo &quot;Backup saved to ~/playground/shopping_$today&quot;
+</code></pre></div><h4>dice.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 9, exercise 5: roll a die
+roll=$(( RANDOM % 6 + 1 ))
+echo &quot;You rolled: $roll&quot;
+</code></pre></div><h4>report.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 9, exercise 6: a short report about the server log
+log=~/playground/logs/server.log
+echo &quot;Lines:    $(wc -l &lt; $log)&quot;
+echo &quot;Errors:   $(grep -c ERROR $log)&quot;
+echo &quot;Warnings: $(grep -c WARNING $log)&quot;
+</code></pre></div></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-9" data-id="lesson-9"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="lesson-10" data-title="Decisions and loops" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Lesson 10 of 10</p>
+    <h1>Decisions and loops</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> if · for · while</p>
+  </header>
+  <div class="prose"><h2>Goals</h2>
+<ul>
+<li>Make a script choose what to do with <code>if</code></li>
+<li>Compare numbers and text, and check whether files exist</li>
+<li>Repeat things with <code>for</code> and <code>while</code> loops</li>
+<li>Write a small game</li>
+</ul>
+<h2>Learn</h2>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>cd ~/scripts
+</code></pre></div>
+<h3>Decisions: <code>if</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+read -p &quot;How old are you? &quot; age
+
+if [ &quot;$age&quot; -ge 18 ]; then
+    echo &quot;You are an adult.&quot;
+else
+    echo &quot;You are not an adult yet.&quot;
+fi
+</code></pre></div>
+<p>How it works:</p>
+<ul>
+<li><code>if [ test ]; then</code> ... <code>fi</code>. <code>fi</code> is <code>if</code> backwards and marks the end.</li>
+<li><code>else</code> is optional: what to do when the test is false.</li>
+<li><strong>Spaces inside <code>[ ]</code> are required!</strong> <code>[ "$age" -ge 18 ]</code> works,
+  <code>["$age" -ge 18]</code> does not.</li>
+<li>Put variables inside the test in double quotes. It avoids errors when they are empty.</li>
+<li>The lines inside are indented with spaces. Bash doesn't need this, but it makes scripts much easier to read.</li>
+</ul>
+<h3>More than two choices: <code>elif</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+read -p &quot;What's the temperature? &quot; temp
+
+if [ &quot;$temp&quot; -ge 25 ]; then
+    echo &quot;It's hot! Shorts today.&quot;
+elif [ &quot;$temp&quot; -ge 15 ]; then
+    echo &quot;Nice weather. A T-shirt is fine.&quot;
+elif [ &quot;$temp&quot; -ge 5 ]; then
+    echo &quot;Take a jacket.&quot;
+else
+    echo &quot;Brrr! Hat and gloves!&quot;
+fi
+</code></pre></div>
+<p><code>elif</code> means "else if". Bash checks each test from the top and runs the <strong>first</strong> one that's true.</p>
+<h3>Tests you can use</h3>
+<p>Comparing <strong>numbers</strong>:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[ "$a" -eq "$b" ]</code></td>
+<td>equal</td>
+</tr>
+<tr>
+<td><code>[ "$a" -ne "$b" ]</code></td>
+<td>not equal</td>
+</tr>
+<tr>
+<td><code>[ "$a" -lt "$b" ]</code></td>
+<td>less than</td>
+</tr>
+<tr>
+<td><code>[ "$a" -le "$b" ]</code></td>
+<td>less than or equal</td>
+</tr>
+<tr>
+<td><code>[ "$a" -gt "$b" ]</code></td>
+<td>greater than</td>
+</tr>
+<tr>
+<td><code>[ "$a" -ge "$b" ]</code></td>
+<td>greater than or equal</td>
+</tr>
+</tbody>
+</table></div>
+<p>Comparing <strong>text</strong>:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[ "$a" = "$b" ]</code></td>
+<td>same text</td>
+</tr>
+<tr>
+<td><code>[ "$a" != "$b" ]</code></td>
+<td>different text</td>
+</tr>
+<tr>
+<td><code>[ -z "$a" ]</code></td>
+<td>empty</td>
+</tr>
+<tr>
+<td><code>[ -n "$a" ]</code></td>
+<td>not empty</td>
+</tr>
+</tbody>
+</table></div>
+<p>Checking <strong>files</strong>:</p>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[ -e "$f" ]</code></td>
+<td>exists</td>
+</tr>
+<tr>
+<td><code>[ -f "$f" ]</code></td>
+<td>exists and is a file</td>
+</tr>
+<tr>
+<td><code>[ -d "$f" ]</code></td>
+<td>exists and is a folder</td>
+</tr>
+</tbody>
+</table></div>
+<p>Combine tests with <code>&amp;&amp;</code> (and) and <code>||</code> (or):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>if [ &quot;$age&quot; -ge 13 ] &amp;&amp; [ &quot;$age&quot; -le 19 ]; then
+    echo &quot;You are a teenager.&quot;
+fi
+</code></pre></div>
+<p>Example with files:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+read -p &quot;Which file? &quot; f
+if [ -f &quot;$f&quot; ]; then
+    echo &quot;$f has $(wc -l &lt; &quot;$f&quot;) lines.&quot;
+elif [ -d &quot;$f&quot; ]; then
+    echo &quot;$f is a folder.&quot;
+else
+    echo &quot;There is no $f here.&quot;
+fi
+</code></pre></div>
+<h3>Checking arguments</h3>
+<p>Good scripts check they were given what they need:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+if [ $# -ne 1 ]; then
+    echo &quot;Usage: $0 NAME&quot;
+    exit 1
+fi
+echo &quot;Hello, $1!&quot;
+</code></pre></div>
+<p><code>exit 1</code> stops the script. A number other than 0 means "something went wrong".</p>
+<h3>Repeating: the <code>for</code> loop</h3>
+<p>A <code>for</code> loop runs the same commands once for <strong>each</strong> item in a list:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>for animal in cat dog fish; do
+    echo &quot;I like $animal&quot;
+done
+</code></pre></div>
+<p>The variable (<code>animal</code>) gets each value in turn. <code>do</code> ... <code>done</code> mark the
+commands to repeat.</p>
+<p>Counting:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>for i in {1..10}; do
+    echo &quot;$i x 7 = $(( i * 7 ))&quot;
+done
+</code></pre></div>
+<p>Every file in a folder (this is where loops become really useful):</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>for file in ~/playground/*.txt; do
+    echo &quot;$file has $(wc -l &lt; &quot;$file&quot;) lines&quot;
+done
+</code></pre></div>
+<p>(<code>wc -l &lt; file</code> prints only the number, without the file name.)</p>
+<p>Every line in a file:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>for animal in $(cat ~/playground/animals.txt); do
+    echo &quot;Hello, $animal!&quot;
+done
+</code></pre></div>
+<h3>Repeating while something is true: <code>while</code></h3>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+count=10
+while [ &quot;$count&quot; -gt 0 ]; do
+    echo &quot;$count...&quot;
+    sleep 1
+    count=$(( count - 1 ))
+done
+echo &quot;Lift off! 🚀&quot;
+</code></pre></div>
+<p>⚠️ If the test never becomes false, the loop runs <strong>forever</strong>. Press <kbd>Ctrl</kbd> + <kbd>C</kbd> to stop it.</p>
+<h3>Choosing from a menu: <code>case</code></h3>
+<p>When one variable can have many values, <code>case</code> is neater than lots of <code>elif</code>s:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+read -p &quot;Pick a fruit (apple/banana/cherry): &quot; fruit
+case &quot;$fruit&quot; in
+    apple)  echo &quot;Apples are red or green.&quot; ;;
+    banana) echo &quot;Bananas are yellow.&quot; ;;
+    cherry) echo &quot;Cherries are small and red.&quot; ;;
+    *)      echo &quot;I don't know that fruit.&quot; ;;
+esac
+</code></pre></div>
+<p><code>*)</code> catches everything else. <code>esac</code> is <code>case</code> backwards.</p>
+<h3>Putting it together: a guessing game</h3>
+<p>Save this as <code>guess.sh</code>, make it runnable, and play:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Guess the number game
+secret=$(( RANDOM % 100 + 1 ))
+tries=0
+
+echo &quot;I'm thinking of a number between 1 and 100.&quot;
+
+while true; do
+    read -p &quot;Your guess: &quot; guess
+    tries=$(( tries + 1 ))
+
+    if [ &quot;$guess&quot; -lt &quot;$secret&quot; ]; then
+        echo &quot;Too small!&quot;
+    elif [ &quot;$guess&quot; -gt &quot;$secret&quot; ]; then
+        echo &quot;Too big!&quot;
+    else
+        echo &quot;Correct! You needed $tries tries.&quot;
+        break
+    fi
+done
+</code></pre></div>
+<p><code>while true</code> loops forever, and <code>break</code> jumps out of the loop.</p>
+<h2>Try it</h2>
+<ol>
+<li>Write a script that asks for a number and says whether it is even or odd.
+   (Hint: a number is even if <code>$(( n % 2 ))</code> is <code>0</code>.)</li>
+<li>Print the numbers 1 to 20 with a <code>for</code> loop.</li>
+<li>Run the countdown script. Change it to count down from 5.</li>
+<li>Play the guessing game. What's the smallest number of tries that <strong>always</strong> works?</li>
+</ol>
+<h2>Exercises</h2>
+<ol>
+<li><strong><code>password.sh</code></strong>: asks for a password. If it's <code>open sesame</code>, print <code>Welcome!</code>, otherwise print <code>Go away!</code>.
+   Then improve it: give the user 3 tries.</li>
+<li><strong><code>times.sh</code></strong>: takes a number as an argument and prints its multiplication table from 1 to 10.
+   If no argument is given, print a usage message and exit.</li>
+<li><strong><code>fizzbuzz.sh</code></strong>: print the numbers 1 to 30, but print <code>Fizz</code> instead of numbers divisible by 3,
+   <code>Buzz</code> instead of numbers divisible by 5, and <code>FizzBuzz</code> for numbers divisible by both.</li>
+<li><strong><code>sort_files.sh</code></strong>: tidies <code>~/playground/messy</code> automatically (like Lesson 3, but with a loop):
+   for each file, look at its ending and move it into <code>photos</code>, <code>music</code> or <code>documents</code>.
+   Hints: <code>case "$file" in *.jpg|*.png) ... ;;</code>. Reset the playground first.</li>
+<li><strong><code>dice_game.sh</code></strong>: you and the computer each roll a die (1–6). Say who wins, or if it's a draw.
+   Then make it play 5 rounds and keep the score.</li>
+<li><strong><code>check.sh</code></strong>: takes a file name as an argument and says whether it exists, whether it is a file or a
+   folder, and, if it's a file, how many lines it has.</li>
+<li>Improve the guessing game: if the user types something that is not a number, say so instead of
+   showing an error. (Hint: <code>[[ "$guess" =~ ^[0-9]+$ ]]</code> is true when <code>guess</code> contains only digits.)</li>
+</ol>
+<h2>Quiz</h2>
+<ol>
+<li>How does an <code>if</code> block end? How does a <code>for</code> loop end?</li>
+<li>Why is <code>[$x -eq 5]</code> wrong?</li>
+<li>Which test checks that two pieces of <strong>text</strong> are the same?</li>
+<li>What's the difference between a <code>for</code> loop and a <code>while</code> loop?</li>
+<li>How do you stop a loop that runs forever?</li>
+</ol>
+<h2>Recap</h2>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>if [ test ]; then        for x in a b c; do        while [ test ]; do
+    ...                      ...                       ...
+elif [ test ]; then      done                      done
+    ...
+else                     case &quot;$x&quot; in
+    ...                      a) ... ;;
+fi                           *) ... ;;
+                         esac
+</code></pre></div>
+<div class="table"><table>
+<thead>
+<tr>
+<th>Thing</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-eq -ne -lt -le -gt -ge</code></td>
+<td>number comparisons</td>
+</tr>
+<tr>
+<td><code>=</code> <code>!=</code> <code>-z</code> <code>-n</code></td>
+<td>text comparisons</td>
+</tr>
+<tr>
+<td><code>-e -f -d</code></td>
+<td>exists / is a file / is a folder</td>
+</tr>
+<tr>
+<td><code>&amp;&amp;</code>, <code>||</code></td>
+<td>and, or</td>
+</tr>
+<tr>
+<td><code>break</code></td>
+<td>jump out of a loop</td>
+</tr>
+<tr>
+<td><code>exit 1</code></td>
+<td>stop the script with an error</td>
+</tr>
+</tbody>
+</table></div></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><div class="table"><table>
+<thead>
+<tr>
+<th>Exercise</th>
+<th>Script</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>password.sh</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>times.sh</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>fizzbuzz.sh</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>sort_files.sh</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>dice_game.sh</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>check.sh</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>guess.sh</code></td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Try it, question 4:</strong> 7 tries always work. Each guess in the middle of what's
+left halves the possibilities: 100 → 50 → 25 → 13 → 7 → 4 → 2 → 1.</p>
+<p><strong>Quiz</strong></p>
+<ol>
+<li><code>if</code> ends with <code>fi</code>; <code>for</code> (and <code>while</code>) end with <code>done</code>.</li>
+<li>There must be spaces inside the brackets: <code>[ $x -eq 5 ]</code>.</li>
+<li><code>[ "$a" = "$b" ]</code></li>
+<li><code>for</code> goes through a list of items; <code>while</code> repeats as long as a test is true.</li>
+<li><kbd>Ctrl</kbd> + <kbd>C</kbd>.</li>
+</ol><h4>password.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 10, exercise 1: a password check with 3 tries
+for try in 1 2 3; do
+    read -p &quot;Password: &quot; password
+    if [ &quot;$password&quot; = &quot;open sesame&quot; ]; then
+        echo &quot;Welcome!&quot;
+        exit 0
+    fi
+    echo &quot;Wrong! ($try of 3)&quot;
+done
+echo &quot;Go away!&quot;
+exit 1
+</code></pre></div><h4>times.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 10, exercise 2: multiplication table
+if [ $# -ne 1 ]; then
+    echo &quot;Usage: $0 NUMBER&quot;
+    exit 1
+fi
+for i in {1..10}; do
+    echo &quot;$i x $1 = $(( i * $1 ))&quot;
+done
+</code></pre></div><h4>fizzbuzz.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 10, exercise 3: FizzBuzz
+for i in {1..30}; do
+    if [ $(( i % 15 )) -eq 0 ]; then
+        echo &quot;FizzBuzz&quot;
+    elif [ $(( i % 3 )) -eq 0 ]; then
+        echo &quot;Fizz&quot;
+    elif [ $(( i % 5 )) -eq 0 ]; then
+        echo &quot;Buzz&quot;
+    else
+        echo &quot;$i&quot;
+    fi
+done
+</code></pre></div><h4>sort_files.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 10, exercise 4: tidy the messy folder automatically
+cd ~/playground/messy || exit 1
+mkdir -p photos music documents
+for file in *; do
+    # skip the folders we just made
+    if [ -d &quot;$file&quot; ]; then
+        continue
+    fi
+    case &quot;$file&quot; in
+        *.jpg|*.png) mv &quot;$file&quot; photos/ ;;
+        *.mp3)       mv &quot;$file&quot; music/ ;;
+        *.txt|*.csv) mv &quot;$file&quot; documents/ ;;
+        *)           echo &quot;Don't know where to put $file&quot; ;;
+    esac
+done
+ls -R
+</code></pre></div><h4>dice_game.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 10, exercise 5: dice game against the computer, 5 rounds
+me=0
+computer=0
+for round in {1..5}; do
+    read -p &quot;Round $round - press Enter to roll...&quot;
+    my_roll=$(( RANDOM % 6 + 1 ))
+    computer_roll=$(( RANDOM % 6 + 1 ))
+    echo &quot;You rolled $my_roll, the computer rolled $computer_roll.&quot;
+    if [ &quot;$my_roll&quot; -gt &quot;$computer_roll&quot; ]; then
+        echo &quot;You win this round!&quot;
+        me=$(( me + 1 ))
+    elif [ &quot;$my_roll&quot; -lt &quot;$computer_roll&quot; ]; then
+        echo &quot;The computer wins this round.&quot;
+        computer=$(( computer + 1 ))
+    else
+        echo &quot;A draw.&quot;
+    fi
+done
+echo &quot;Final score: you $me, computer $computer&quot;
+</code></pre></div><h4>check.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 10, exercise 6: tell me about a file or folder
+if [ $# -ne 1 ]; then
+    echo &quot;Usage: $0 NAME&quot;
+    exit 1
+fi
+if [ ! -e &quot;$1&quot; ]; then
+    echo &quot;$1 does not exist.&quot;
+elif [ -d &quot;$1&quot; ]; then
+    echo &quot;$1 is a folder.&quot;
+elif [ -f &quot;$1&quot; ]; then
+    echo &quot;$1 is a file with $(wc -l &lt; &quot;$1&quot;) lines.&quot;
+fi
+</code></pre></div><h4>guess.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Lesson 10, exercise 7: guessing game that checks the input is a number
+secret=$(( RANDOM % 100 + 1 ))
+tries=0
+
+echo &quot;I'm thinking of a number between 1 and 100.&quot;
+
+while true; do
+    read -p &quot;Your guess: &quot; guess
+    if ! [[ &quot;$guess&quot; =~ ^[0-9]+$ ]]; then
+        echo &quot;That's not a number!&quot;
+        continue
+    fi
+    tries=$(( tries + 1 ))
+
+    if [ &quot;$guess&quot; -lt &quot;$secret&quot; ]; then
+        echo &quot;Too small!&quot;
+    elif [ &quot;$guess&quot; -gt &quot;$secret&quot; ]; then
+        echo &quot;Too big!&quot;
+    else
+        echo &quot;Correct! You needed $tries tries.&quot;
+        break
+    fi
+done
+</code></pre></div></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-lesson-10" data-id="lesson-10"> I finished this lesson</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+<section class="view" id="project" data-title="Final project" hidden>
+  <header class="lesson-head">
+    <p class="eyebrow">Final project</p>
+    <h1>Final project</h1>
+    <p class="prompt"><span class="ps1">learner@ubuntu:~/playground$</span> everything</p>
+  </header>
+  <div class="prose"><p>Time to put everything together! Pick <strong>one</strong> project (or more, if you're
+enjoying it). Each one uses commands and ideas from the whole course.</p>
+<p>Plan before you type:</p>
+<ol>
+<li>Write down, in plain words, what the script should do, step by step.</li>
+<li>Build it a little at a time. Run it after every few lines.</li>
+<li>When it works, add comments so someone else can understand it.</li>
+<li>Show it to your teacher and explain how it works.</li>
+</ol>
+<hr />
+<h2>Project A: My diary</h2>
+<p>A script <code>diary.sh</code> that keeps a diary in <code>~/diary.txt</code>.</p>
+<p><strong>Must have:</strong></p>
+<ul>
+<li>When run with <code>add</code>, it asks "What happened today?" and appends the date and the answer to the diary.</li>
+<li>When run with <code>show</code>, it shows the whole diary with <code>less</code>.</li>
+<li>When run with <code>last</code>, it shows the last 5 entries.</li>
+<li>When run with <code>search WORD</code>, it shows the entries containing that word.</li>
+<li>When run with anything else (or nothing), it prints how to use it.</li>
+</ul>
+<p><strong>Ideas for extras:</strong> count how many entries there are; add a mood (<code>happy</code>, <code>tired</code>...) to each entry and
+show statistics of moods with <code>sort | uniq -c</code>.</p>
+<p>Example:</p>
+<div class="code"><div class="code-bar"><span>output</span><button type="button" class="copy">Copy</button></div><pre><code>$ ./diary.sh add
+What happened today? I learned bash loops
+Saved!
+$ ./diary.sh search loops
+2026-03-14 18:05 | I learned bash loops
+</code></pre></div>
+<hr />
+<h2>Project B: The quiz master</h2>
+<p>A script <code>quiz.sh</code> that asks the player questions and keeps score.</p>
+<p><strong>Must have:</strong></p>
+<ul>
+<li>At least 5 questions (they can be about Bash!).</li>
+<li>Says "Correct!" or "Wrong, the answer was ..." after each.</li>
+<li>At the end prints the score, e.g. <code>You got 4 out of 5</code>.</li>
+<li>Prints a different message depending on the score (e.g. 5 = "Bash master!", 3–4 = "Well done", less = "Try again").</li>
+</ul>
+<p><strong>Ideas for extras:</strong> read the questions and answers from a file <code>questions.txt</code>, one per line like
+<code>What command shows your current folder?|pwd</code>, and use <code>cut -d'|'</code> to split them; ask questions in random
+order with <code>shuf</code>; save the high score to a file.</p>
+<hr />
+<h2>Project C: The folder tidier</h2>
+<p>A script <code>tidy.sh</code> that takes a folder as an argument and sorts its files into subfolders by type.</p>
+<p><strong>Must have:</strong></p>
+<ul>
+<li>Checks that it was given exactly one argument, and that it is a folder.</li>
+<li>Creates <code>images</code>, <code>music</code>, <code>documents</code> and <code>other</code> folders inside it, if they don't exist.</li>
+<li>Moves <code>.jpg</code>, <code>.png</code>, <code>.gif</code> into <code>images</code>; <code>.mp3</code>, <code>.wav</code> into <code>music</code>; <code>.txt</code>, <code>.pdf</code>, <code>.csv</code> into <code>documents</code>;
+  everything else into <code>other</code>.</li>
+<li>Prints what it moved, and at the end, how many files went into each folder.</li>
+</ul>
+<p><strong>Ideas for extras:</strong> a <code>--dry-run</code> option that only <em>shows</em> what it would do without moving anything;
+work with upper-case endings like <code>.JPG</code> too.</p>
+<p>Test it on <code>~/playground/messy</code> (reset the playground first). <strong>Never test it on a real folder until you're sure it works!</strong></p>
+<hr />
+<h2>Project D: System report</h2>
+<p>A script <code>sysreport.sh</code> that writes a report about the computer into <code>report_DATE.txt</code>.</p>
+<p><strong>Must have:</strong></p>
+<ul>
+<li>Date and time, user name, computer name, and how long it has been on.</li>
+<li>Free disk space for <code>/</code>.</li>
+<li>The 5 biggest items in your home folder (<code>du -sh ~/* | sort -h | tail -n 5</code>).</li>
+<li>How many <code>.txt</code>, <code>.jpg</code> and <code>.sh</code> files are in your home folder.</li>
+<li>Prints "Report saved to ..." at the end.</li>
+</ul>
+<p><strong>Ideas for extras:</strong> show the 5 processes using the most memory (<code>ps aux --sort=-%mem | head -n 6</code>);
+show a warning if the disk is more than 90% full.</p>
+<hr />
+<h2>Checklist for every project</h2>
+<ul>
+<li class="task"><input type="checkbox" aria-label="done"> Starts with <code>#!/bin/bash</code></li>
+<li class="task"><input type="checkbox" aria-label="done"> Is runnable (<code>chmod +x</code>)</li>
+<li class="task"><input type="checkbox" aria-label="done"> Has comments explaining the main parts</li>
+<li class="task"><input type="checkbox" aria-label="done"> Variables in tests are in double quotes</li>
+<li class="task"><input type="checkbox" aria-label="done"> Checks its arguments and prints a usage message when they're wrong</li>
+<li class="task"><input type="checkbox" aria-label="done"> Has been tested with good input <strong>and</strong> with bad input</li>
+</ul>
+<p>Congratulations on finishing the course! 🎉</p></div>
+  <details class="answers">
+    <summary>Show the answers</summary>
+    <div class="prose"><p>An example solution for Project A (the diary) is in <code>diary.sh</code>.
+The other projects have no single right answer. Check them against the checklist
+at the end of the project page.</p><h4>diary.sh</h4><div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Copy</button></div><pre><code>#!/bin/bash
+# Final project A: a diary kept in ~/diary.txt
+# Usage: ./diary.sh add | show | last | search WORD
+
+diary=~/diary.txt
+touch &quot;$diary&quot;
+
+case &quot;$1&quot; in
+    add)
+        read -p &quot;What happened today? &quot; entry
+        echo &quot;$(date '+%F %H:%M') | $entry&quot; &gt;&gt; &quot;$diary&quot;
+        echo &quot;Saved!&quot;
+        ;;
+    show)
+        less &quot;$diary&quot;
+        ;;
+    last)
+        tail -n 5 &quot;$diary&quot;
+        ;;
+    search)
+        if [ -z &quot;$2&quot; ]; then
+            echo &quot;Usage: $0 search WORD&quot;
+            exit 1
+        fi
+        grep -i &quot;$2&quot; &quot;$diary&quot;
+        ;;
+    *)
+        echo &quot;Usage: $0 add | show | last | search WORD&quot;
+        exit 1
+        ;;
+esac
+</code></pre></div></div>
+  </details>
+  <div class="lesson-foot">
+    <label class="done"><input type="checkbox" class="done-box" id="done-project" data-id="project"> I finished this project</label>
+    <nav class="pager"></nav>
+  </div>
+</section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var side = document.getElementById("side");
+  var links = document.getElementById("side-links");
+  links.style.display = "";  // let CSS decide (collapsed on phones)
+  var menuBtn = document.getElementById("menu-btn");
+  menuBtn.addEventListener("click", function () {
+    var open = side.classList.toggle("open");
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+
+  var views = Array.prototype.slice.call(document.querySelectorAll(".view"));
+  var order = views.map(function (v) { return v.id; });
+  var lessonIds = order.filter(function (id) { return /^lesson-|^project$/.test(id); });
+
+  // progress, remembered in this browser only
+  var KEY = "bash-course-done";
+  var done = {};
+  try { done = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { done = {}; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(done)); } catch (e) {} }
+  function paintProgress() {
+    document.querySelectorAll(".tick").forEach(function (t) { t.classList.toggle("on", !!done[t.dataset.id]); });
+    document.querySelectorAll(".done-box").forEach(function (b) { b.checked = !!done[b.dataset.id]; });
+    var n = lessonIds.filter(function (id) { return done[id]; }).length;
+    document.getElementById("progress-text").textContent = n + " of " + lessonIds.length + " done";
+    document.getElementById("progress-bar").style.width = (100 * n / lessonIds.length) + "%";
+  }
+  document.querySelectorAll(".done-box").forEach(function (b) {
+    b.addEventListener("change", function () {
+      if (b.checked) done[b.dataset.id] = true; else delete done[b.dataset.id];
+      save(); paintProgress();
+    });
+  });
+
+  // pager links at the bottom of each lesson
+  views.forEach(function (v, i) {
+    var pager = v.querySelector(".pager");
+    if (!pager) return;
+    var prev = views[i - 1], next = views[i + 1];
+    if (prev) pager.insertAdjacentHTML("beforeend", '<a href="#' + prev.id + '">← ' + prev.dataset.title + '</a>');
+    if (next) pager.insertAdjacentHTML("beforeend", '<a class="next" href="#' + next.id + '">' + next.dataset.title + ' →</a>');
+  });
+
+  function show() {
+    var id = location.hash.replace("#", "");
+    if (order.indexOf(id) === -1) id = "home";
+    views.forEach(function (v) { v.hidden = v.id !== id; });
+    document.querySelectorAll(".side a[data-id]").forEach(function (a) {
+      if (a.dataset.id === id) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+    side.classList.remove("open");
+    menuBtn.setAttribute("aria-expanded", "false");
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener("hashchange", show);
+  show();
+  paintProgress();
+
+  // copy buttons on terminal panes
+  document.querySelectorAll(".copy").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var code = btn.closest(".code").querySelector("code");
+      var text = code.textContent;
+      function flash(msg) { btn.textContent = msg; setTimeout(function () { btn.textContent = "Copy"; }, 1500); }
+      function selectIt() {
+        var r = document.createRange(); r.selectNodeContents(code);
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        flash("Selected");
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash("Copied"); }, selectIt);
+      } else { selectIt(); }
+    });
+  });
+})();
+</script>
